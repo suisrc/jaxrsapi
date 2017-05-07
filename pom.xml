@@ -117,9 +117,9 @@
 
 	<modules>
 		<module>core</module>
-		<module>weixin-core</module>
-		<module>weixin-mp</module>
-		<module>weixin-open</module>
-		<module>weixin-pay</module>
+		
+		
+		
+		
 	</modules>
 </project>
