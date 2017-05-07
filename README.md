@@ -57,21 +57,21 @@ NSC是native service client缩写。用于生产接口实现体，但是如果�
 负载具有很好的控制性。在使用过程中通过ClientBuilderFactory.initHttpEngineThreadSaft对客户端引擎进行初始化
 
 ```java
-		ClientBuilder clientBuilder = createClientBuilder();// 配置网络通信内容
-		if (clientBuilder instanceof ResteasyClientBuilder) {
-			ResteasyClientBuilder rcBuilder = (ResteasyClientBuilder) clientBuilder;
-			if (executor != null) {
-				rcBuilder.asyncExecutor(executor); // 配置线程池，默认使用线程池为固定大小最大10个线程
-			}
-			if (providerFactory != null) {
-				rcBuilder.providerFactory(providerFactory);
-			}
-			ClientBuilderFactory.initHttpEngineThreadSaft(rcBuilder); // 设定HTTP客户端引擎的线程安全性
+	ClientBuilder clientBuilder = createClientBuilder();// 配置网络通信内容
+	if (clientBuilder instanceof ResteasyClientBuilder) {
+		ResteasyClientBuilder rcBuilder = (ResteasyClientBuilder) clientBuilder;
+		if (executor != null) {
+			rcBuilder.asyncExecutor(executor); // 配置线程池，默认使用线程池为固定大小最大10个线程
 		}
-		Client client = clientBuilder.build();
-		// 加入Produces矫正监听器
-		client.register(WxClientResponseFilter.class);
-		return client;
+		if (providerFactory != null) {
+			rcBuilder.providerFactory(providerFactory);
+		}
+		ClientBuilderFactory.initHttpEngineThreadSaft(rcBuilder); // 设定HTTP客户端引擎的线程安全性
+	}
+	Client client = clientBuilder.build();
+	// 加入Produces矫正监听器
+	client.register(WxClientResponseFilter.class);
+	return client;
 ```
 
 ## 总结
