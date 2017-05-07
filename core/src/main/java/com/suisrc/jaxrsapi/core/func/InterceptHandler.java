@@ -5,6 +5,7 @@ package com.suisrc.jaxrsapi.core.func;
  * @author Y13
  *
  */
+@FunctionalInterface
 public interface InterceptHandler<T> {
 	/** 方法名称 */
 	final String METHOD = "accept";

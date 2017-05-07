@@ -4,6 +4,10 @@ import javax.ws.rs.client.ClientBuilder;
 
 /**
  * Client Builder Factory工程类
+ * 
+ * 由于在实际生成环境中发现，Resteasy使用的HttpClient存在很多差异，在4.3.6版本是一个分水岭
+ * 所以在这里提供程序的因外部包不同而导致的兼容性问题
+ * 
  * @see org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
  * @author Y13
  *

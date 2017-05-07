@@ -81,8 +81,6 @@ public class ClientServiceFactory {
 	// { proxy = ProxyBuilder.builder( ApiType.class, (WebTarget)activator.getAdapter(WebTarget.class) ).build(); }
 	private static final String InitMethodModule = "{ " + Consts.FIELD_PROXY + " = " + ProxyBuilder.class.getCanonicalName() + ".builder({ApiType}.class, ("
 			+ WebTarget.class.getCanonicalName() + ")"+ Consts.FIELD_ACTIVATOR +".getAdapter(" + WebTarget.class.getCanonicalName() + ".class)).build(); }";
-	// String baseUrl = (String)activator.getAdatper("base url");
-//	private static final String GetBaseUrlModule = "String " + BASE_URL + " = (String) " + Consts.FIELD_ACTIVATOR + ".getAdapter(\"" + Consts.BASE_URL + "\"); ";
 	/**
 	 * 系统常数模版
 	 */
