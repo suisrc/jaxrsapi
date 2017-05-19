@@ -13,6 +13,12 @@ import javax.ws.rs.client.WebTarget;
 public interface ApiActivator {
 	
 	/**
+	 * default values container
+	 */
+	final String DVC = Global.getValue(System::getProperty, Consts.KEY_VALUE_PREFIX_DEFAULT, null, 
+			Consts.PRE_ENVIRONMENT, Consts.PRE_SYSTEM, Consts.PRE_GLOBAL, Consts.PRE_THREAD);
+	
+	/**
 	 * 初始化
 	 */
 	void initialized();
@@ -49,7 +55,9 @@ public interface ApiActivator {
 	 */
 	default
 	<T> T getAdapter(String key) {
-		return null;
+		if( key == null ) { return null; }
+		T value = Global.getValue(key);
+		return value != null || DVC == null ? value : Global.getValue(DVC + key);
 	}
 	
 	/**

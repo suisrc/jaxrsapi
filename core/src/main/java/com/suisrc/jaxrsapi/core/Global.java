@@ -1,5 +1,6 @@
 package com.suisrc.jaxrsapi.core;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -7,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import com.suisrc.jaxrsapi.core.func.FuncRP;
 
 /**
  * 全局属性，操作的时候访问, 所有的缓存为单服务器缓存，不进行集群同步
@@ -167,4 +170,24 @@ public class Global {
 		}
 	}
 
+	/**----------------------分割线 TODO 对默认值进行限定 */
+	
+	static String getValue(FuncRP<String, String> handler, String key, String defaultValue, String... candidate) {
+		String value = handler.exec(key);
+		return value != null && (candidate.length == 0 || Arrays.asList(candidate).contains(value)) ? value : defaultValue;
+	}
+	
+	/**
+	 * 需要保证key不为null
+	 * @param key
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	static <T> T getValue(String key) {
+		if(key.startsWith(Consts.PRE_GLOBAL)) { return Global.getCache(key.substring(Consts.PRE_GLOBAL.length())); }
+		if(key.startsWith(Consts.PRE_THREAD)) { return Global.getThreadCache(key.substring(Consts.PRE_THREAD.length())); }
+		if(key.startsWith(Consts.PRE_ENVIRONMENT)) { return (T) System.getenv(key.substring(Consts.PRE_ENVIRONMENT.length())); }
+		if(key.startsWith(Consts.PRE_SYSTEM)) { return (T) System.getProperty(key.substring(Consts.PRE_SYSTEM.length())); }
+		return null;
+	}
 }

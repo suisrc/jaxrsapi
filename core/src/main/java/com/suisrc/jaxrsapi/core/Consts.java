@@ -6,6 +6,32 @@ package com.suisrc.jaxrsapi.core;
  *
  */
 public interface Consts {
+	
+	//-------------------------value prefix------------------------------//
+	
+	/**
+	 * 注入属性二级变名
+	 */
+
+	/**
+	 * 系统环境变量
+	 */
+	final String PRE_ENVIRONMENT = "E:";
+	
+	/**
+	 * 系统属性变量
+	 */
+	final String PRE_SYSTEM = "S:";
+	
+	/**
+	 * 全局环境变量
+	 */
+	final String PRE_GLOBAL = "G:";
+	
+	/**
+	 * 线程环境变量
+	 */
+	final String PRE_THREAD = "T:";
 
 	//----------------------------proxy----------------------------------//
 	/**
@@ -37,6 +63,12 @@ public interface Consts {
 	 * 多模式：同一个restful接口对应多台远程服务器
 	 */
 	String KEY_REMOTE_API_NULTI_MODE = "com.suisrc.remote-api.runtime.multi-mode";
+	
+	/**
+	 * 默认的变量容器
+	 * 该配置内容只能是 E: S: G: T: 其中情况，其他无效
+	 */
+	String KEY_VALUE_PREFIX_DEFAULT = "com.suisrc.remote-api.values.default-container";
 
 	
 	/**
