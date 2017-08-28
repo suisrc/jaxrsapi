@@ -1,5 +1,8 @@
 package com.suisrc.jaxrsapi.core.runtime;
 
+import com.suisrc.common.iface.ITransformString;
+import com.suisrc.common.transform.StringTransform;
+
 /**
  * 类型转换
  * @author Y13
@@ -17,23 +20,11 @@ public class TransformUtils {
 	 * @param value  数值
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> T transform(Class<T> type, String value) {
 		if( value.isEmpty() || value.toLowerCase().equals("null") ) {
 			return null;
 		}
-		if( type == String.class ) {
-			return (T) value;
-		} else if( type == int.class || type == Integer.class ){
-			return  (T) Integer.valueOf(value);
-		} else if( type == double.class || type == Double.class ){
-			return (T) Double.valueOf(value);
-		} else if( type == boolean.class || type == Boolean.class ){
-			return (T) Boolean.valueOf(value);
-		} else if( type == long.class || type == Long.class ){
-			return (T) Long.valueOf(value);
-		} else {
-			return null;
-		}
+		ITransformString<T> ts = StringTransform.createTransform(type);
+		return ts.fromString(value);
 	}
 }

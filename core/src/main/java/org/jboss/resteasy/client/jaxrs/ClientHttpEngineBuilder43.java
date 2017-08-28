@@ -22,6 +22,7 @@ import org.jboss.resteasy.client.jaxrs.engines.PassthroughTrustManager;
 
 /**
  * http client builder 初始化工具类，功能和HttpClientBuilder43类似
+ * 
  * @see org.jboss.resteasy.client.jaxrs.HttpClientBuilder43
  * @see org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
  * @author Y13
@@ -29,104 +30,108 @@ import org.jboss.resteasy.client.jaxrs.engines.PassthroughTrustManager;
  */
 public class ClientHttpEngineBuilder43 {
 
-	public static ClientHttpEngine initDefaultEngine43(ResteasyClientBuilder that) {
-		HostnameVerifier verifier = null;
-		if (that.verifier != null) {
-			verifier = new ResteasyClientBuilder.VerifierWrapper(that.verifier);
-		} else {
-			switch (that.policy) {
-			case ANY:
-				verifier = new NoopHostnameVerifier();
-				break;
-			case WILDCARD:
-				verifier = new DefaultHostnameVerifier();
-				break;
-			case STRICT:
-				verifier = new DefaultHostnameVerifier();
-				break;
-			}
-		}
-		try {
-			SSLConnectionSocketFactory sslsf = null;
-			SSLContext theContext = that.sslContext;
-			if (that.disableTrustManager) {
-				theContext = SSLContext.getInstance("SSL");
-				theContext.init(null, new TrustManager[] { new PassthroughTrustManager() }, new SecureRandom());
-				verifier = new NoopHostnameVerifier();
-				sslsf = new SSLConnectionSocketFactory(theContext, verifier);
-			} else if (theContext != null) {
-				sslsf = new SSLConnectionSocketFactory(theContext, verifier) {
-					@Override
-					protected void prepareSocket(SSLSocket socket) throws IOException {
-						that.prepareSocketForSni(socket);
-					}
-				};
-			} else if (that.clientKeyStore != null || that.truststore != null) {
-				SSLContext ctx = SSLContexts.custom().useProtocol(SSLConnectionSocketFactory.TLS).setSecureRandom(null)
-						.loadKeyMaterial(that.clientKeyStore, that.clientPrivateKeyPassword != null ? that.clientPrivateKeyPassword.toCharArray() : null)
-						.loadTrustMaterial(that.truststore, TrustSelfSignedStrategy.INSTANCE).build();
-				sslsf = new SSLConnectionSocketFactory(ctx, verifier) {
-					@Override
-					protected void prepareSocket(SSLSocket socket) throws IOException {
-						that.prepareSocketForSni(socket);
-					}
-				};
-			} else {
-				final SSLContext tlsContext = SSLContext.getInstance(SSLConnectionSocketFactory.TLS);
-				tlsContext.init(null, null, null);
-				sslsf = new SSLConnectionSocketFactory(tlsContext, verifier);
-			}
+    public static ClientHttpEngine initDefaultEngine43(ResteasyClientBuilder that) {
+        HostnameVerifier verifier = null;
+        if (that.verifier != null) {
+            verifier = new ResteasyClientBuilder.VerifierWrapper(that.verifier);
+        } else {
+            switch (that.policy) {
+                case ANY:
+                    verifier = new NoopHostnameVerifier();
+                    break;
+                case WILDCARD:
+                    verifier = new DefaultHostnameVerifier();
+                    break;
+                case STRICT:
+                    verifier = new DefaultHostnameVerifier();
+                    break;
+            }
+        }
+        try {
+            SSLConnectionSocketFactory sslsf = null;
+            SSLContext theContext = that.sslContext;
+            if (that.disableTrustManager) {
+                theContext = SSLContext.getInstance("SSL");
+                theContext.init(null, new TrustManager[] {new PassthroughTrustManager()}, new SecureRandom());
+                verifier = new NoopHostnameVerifier();
+                sslsf = new SSLConnectionSocketFactory(theContext, verifier);
+            } else if (theContext != null) {
+                sslsf = new SSLConnectionSocketFactory(theContext, verifier) {
+                    @Override
+                    protected void prepareSocket(SSLSocket socket) throws IOException {
+                        that.prepareSocketForSni(socket);
+                    }
+                };
+            } else if (that.clientKeyStore != null || that.truststore != null) {
+                SSLContext ctx = SSLContexts.custom().useProtocol(SSLConnectionSocketFactory.TLS).setSecureRandom(null)
+                        .loadKeyMaterial(that.clientKeyStore,
+                                that.clientPrivateKeyPassword != null ? that.clientPrivateKeyPassword.toCharArray() : null)
+                        .loadTrustMaterial(that.truststore, TrustSelfSignedStrategy.INSTANCE).build();
+                sslsf = new SSLConnectionSocketFactory(ctx, verifier) {
+                    @Override
+                    protected void prepareSocket(SSLSocket socket) throws IOException {
+                        that.prepareSocketForSni(socket);
+                    }
+                };
+            } else {
+                final SSLContext tlsContext = SSLContext.getInstance(SSLConnectionSocketFactory.TLS);
+                tlsContext.init(null, null, null);
+                sslsf = new SSLConnectionSocketFactory(tlsContext, verifier);
+            }
 
-			final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
-					.register("http", PlainConnectionSocketFactory.getSocketFactory()).register("https", sslsf).build();
+            final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", PlainConnectionSocketFactory.getSocketFactory()).register("https", sslsf).build();
 
-//			HttpClientConnectionManager cm = null;
-//			if (that.connectionPoolSize > 0) {
-//				@SuppressWarnings("resource")
-//				PoolingHttpClientConnectionManager tcm = new PoolingHttpClientConnectionManager(registry, null, null, null, that.connectionTTL, that.connectionTTLUnit);
-//				tcm.setMaxTotal(that.connectionPoolSize);
-//				if (that.maxPooledPerRoute == 0) {
-//					that.maxPooledPerRoute = that.connectionPoolSize;
-//				}
-//				tcm.setDefaultMaxPerRoute(that.maxPooledPerRoute);
-//				cm = tcm;
-//
-//			}
-//			else {
-//				cm = new BasicHttpClientConnectionManager(registry);
-//			}
-			if (that.connectionPoolSize > 0 && that.maxPooledPerRoute == 0) {
-				that.maxPooledPerRoute = that.connectionPoolSize;
-			}
+            // HttpClientConnectionManager cm = null;
+            // if (that.connectionPoolSize > 0) {
+            // @SuppressWarnings("resource")
+            // PoolingHttpClientConnectionManager tcm = new
+            // PoolingHttpClientConnectionManager(registry, null, null, null, that.connectionTTL,
+            // that.connectionTTLUnit);
+            // tcm.setMaxTotal(that.connectionPoolSize);
+            // if (that.maxPooledPerRoute == 0) {
+            // that.maxPooledPerRoute = that.connectionPoolSize;
+            // }
+            // tcm.setDefaultMaxPerRoute(that.maxPooledPerRoute);
+            // cm = tcm;
+            //
+            // }
+            // else {
+            // cm = new BasicHttpClientConnectionManager(registry);
+            // }
+            if (that.connectionPoolSize > 0 && that.maxPooledPerRoute == 0) {
+                that.maxPooledPerRoute = that.connectionPoolSize;
+            }
 
-			RequestConfig.Builder rcBuilder = RequestConfig.custom();
-			if (that.socketTimeout > -1) {
-				rcBuilder.setSocketTimeout((int) that.socketTimeoutUnits.toMillis(that.socketTimeout));
-			}
-			if (that.establishConnectionTimeout > -1) {
-				rcBuilder.setConnectTimeout((int) that.establishConnectionTimeoutUnits.toMillis(that.establishConnectionTimeout));
-			}
-			if (that.connectionCheckoutTimeoutMs > -1) {
-				rcBuilder.setConnectionRequestTimeout(that.connectionCheckoutTimeoutMs);
-			}
+            RequestConfig.Builder rcBuilder = RequestConfig.custom();
+            if (that.socketTimeout > -1) {
+                rcBuilder.setSocketTimeout((int) that.socketTimeoutUnits.toMillis(that.socketTimeout));
+            }
+            if (that.establishConnectionTimeout > -1) {
+                rcBuilder.setConnectTimeout(
+                        (int) that.establishConnectionTimeoutUnits.toMillis(that.establishConnectionTimeout));
+            }
+            if (that.connectionCheckoutTimeoutMs > -1) {
+                rcBuilder.setConnectionRequestTimeout(that.connectionCheckoutTimeoutMs);
+            }
 
-			ClientHttpEngineProxy43 proxy = new ClientHttpEngineProxy43();
-			proxy.setRegistrySafe(registry);
-			proxy.setConnectionPoolSizeSafe(that.connectionPoolSize);
-			proxy.setConnectionTTLSafe(that.connectionTTL);
-			proxy.setConnectionTTLUnitSafe(that.connectionTTLUnit);
-			proxy.setMaxPooledPerRouteSafe(that.maxPooledPerRoute);
-			proxy.setRequestConfigBuilderSafe(rcBuilder);
-//			proxy.setConnManagerSafe(cm);
-			proxy.setProxySafe(that.defaultProxy);
-			proxy.setResponseBufferSizeSafe(that.responseBufferSize);
-			proxy.setHostnameVerifierSafe(verifier);
-			// theContext may be null. We can't really support this with Apache Client.
-			proxy.setSslContextSafe(theContext);
-			return proxy;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
+            ClientHttpEngineProxy43 proxy = new ClientHttpEngineProxy43();
+            proxy.setRegistrySafe(registry);
+            proxy.setConnectionPoolSizeSafe(that.connectionPoolSize);
+            proxy.setConnectionTTLSafe(that.connectionTTL);
+            proxy.setConnectionTTLUnitSafe(that.connectionTTLUnit);
+            proxy.setMaxPooledPerRouteSafe(that.maxPooledPerRoute);
+            proxy.setRequestConfigBuilderSafe(rcBuilder);
+            // proxy.setConnManagerSafe(cm);
+            proxy.setProxySafe(that.defaultProxy);
+            proxy.setResponseBufferSizeSafe(that.responseBufferSize);
+            proxy.setHostnameVerifierSafe(verifier);
+            // theContext may be null. We can't really support this with Apache Client.
+            proxy.setSslContextSafe(theContext);
+            return proxy;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
