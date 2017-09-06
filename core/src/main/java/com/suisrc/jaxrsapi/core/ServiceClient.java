@@ -8,6 +8,13 @@ package com.suisrc.jaxrsapi.core;
  * @param <T>
  */
 public interface ServiceClient {
+    /**
+     * 一些默认默认的方法名字
+     */
+    public static final String MED_initialize = "init";
+    public static final String MED_setActivator = "setActivator";
+    public static final String MED_getActivator = "getActivator";
+    public static final String MED_getAdapter = "getAdapter";
 
     /**
      * 获取激活器,激活器存放远程服务器信息 每一个客户端都都有一个归属的激活器

@@ -63,6 +63,23 @@ public interface ApiActivator {
         T value = Global.getValue(key);
         return value != null || DVC == null ? value : Global.getValue(DVC + key);
     }
+    
+    /**
+     * 带有类型的返回
+     * @param key
+     * @param type
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    default <T> T getAdapter(String key, Class<T> type) {
+        if (type == String.class) {
+            Object obj = getAdapter(key);
+            if (obj != null && type.isAssignableFrom(obj.getClass())) {
+                return (T)obj;
+            }
+        }
+        return null;
+    }
 
     /**
      * 设定适配器内容

@@ -1,4 +1,4 @@
-package com.suisrc.jaxrsapi.core.runtime;
+package com.suisrc.jaxrsapi.core.factory;
 
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -20,9 +20,6 @@ import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.ServiceClient;
 
-import javassist.ClassPool;
-import javassist.CtClass;
-
 /**
  * 执行本地处理 系统中静态存放远程访问实体
  * 
@@ -32,10 +29,10 @@ import javassist.CtClass;
  *
  */
 @SuppressWarnings("unchecked")
-public class NSCFactory /* NativeServiceClientFactory */ {
+public class NativeServiceClientFactory {
 
     /**
-     * 接口实现缓存 这里是给本地应用程序使用（在不支持JavaEE7.0的情况下使用）
+     * 接口实现缓存 这里是给本地应用程序使用（不支持JavaEE7.0的情况下使用）
      */
     private static final Map<String, Object> clientImpls = new HashMap<>();
 
@@ -48,6 +45,16 @@ public class NSCFactory /* NativeServiceClientFactory */ {
     public static <T> T get(Class<T> iface, String alternative) {
         return (T) clientImpls.get(getClientImplKey(iface, alternative));
     }
+    
+    /**
+     * 获取接口实现
+     * 
+     * @param iface
+     * @return
+     */
+    public static <T> T get(Class<T> iface) {
+        return (T) clientImpls.get(getClientImplKey(iface, ""));
+    }
 
     /**
      * 清空
@@ -56,7 +63,7 @@ public class NSCFactory /* NativeServiceClientFactory */ {
         clientImpls.clear();
     }
 
-    // --------------------------------------------------------------------------------------------------------//
+    // ----------------------------------------------------ZERO 构建内容
 
     /**
      * 构建实体远程访问代理对象
@@ -64,7 +71,7 @@ public class NSCFactory /* NativeServiceClientFactory */ {
      * @param clazzes
      */
     public static void build(Class<? extends ApiActivator>... clazzes) {
-        build(false, clazzes);
+        
     }
 
     /**
@@ -72,14 +79,13 @@ public class NSCFactory /* NativeServiceClientFactory */ {
      * 
      * @param clazzes
      */
-    public static void build(boolean debug, Class<? extends ApiActivator>... clazzes) {
+    public static void build(String target, Class<? extends ApiActivator>... clazzes) {
         if (!clientImpls.isEmpty()) {
-            clientImpls.clear();
-        } // 情况原有系统数据
+            clientImpls.clear();// 清空原有系统数据
+        } 
 
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Index index = createIndexer(loader, clazzes);
-        ClassPool ctPool = ClassPool.getDefault();
         // 前期 clientImpls 中都是ApiActivator对象
         for (Object activatorObj : clientImpls.values().toArray()) {
             ApiActivator activator = (ApiActivator) activatorObj;
@@ -87,23 +93,53 @@ public class NSCFactory /* NativeServiceClientFactory */ {
             activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
             activator.init(); // 初始化
             try {// 创建远程接口实现
-                Named named = activator.getClass().getAnnotation(Named.class);
-                ClientServiceFactory.createImpl(activator, index, ctPool, (api, impl) -> {
-                    Class<?> clazz = impl.toClass(loader, null);
-                    if (debug) {
-                        debugCtClass(impl);
+                ClientServiceFactory.createImpl(activator, index, (api, impl) -> {
+                    try {
+                        if (target != null) {
+                            impl.writeFile(target);
+                        }
+                        Class<?> clazz = impl.toClass(loader, null);
+                        Object apiObj = clazz.newInstance(); // 生成通信代理
+                        if (apiObj instanceof ServiceClient) {
+                            ServiceClient sc = (ServiceClient) apiObj;
+                            sc.setActivator(activator); // 设置激活器
+                            sc.init(); // 执行初始化
+                        }
+                        Named named = activator.getClass().getAnnotation(Named.class);
+                        String key = getClientImplKey(api, named == null ? "" : named.value());
+                        clientImpls.put(key, apiObj);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
-                    Object apiObj = clazz.newInstance(); // 生成通信代理
-                    if (apiObj instanceof ServiceClient) {
-                        ServiceClient sc = (ServiceClient) apiObj;
-                        sc.setActivator(activator); // 设置激活器
-                        sc.init(); // 执行初始化
-                    }
-                    String key = getClientImplKey(api, named == null ? "" : named.value());
-                    clientImpls.put(key, apiObj);
                 });
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
+     * 构建实体远程访问代理对象
+     * 
+     * @param clazzes
+     */
+    public static void buildFile(String target, Class<? extends ApiActivator>... clazzes) {
+        if (!clientImpls.isEmpty()) {
+            clientImpls.clear();// 清空原有系统数据
+        } 
+
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        Index index = createIndexer(loader, clazzes);
+        // 前期 clientImpls 中都是ApiActivator对象
+        for (Object activatorObj : clientImpls.values().toArray()) {
+            ApiActivator activator = (ApiActivator) activatorObj;
+            // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
+            activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
+            activator.init(); // 初始化
+            try {// 创建远程接口实现
+                ClientServiceFactory.createImpl(activator, index, target);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -134,7 +170,11 @@ public class NSCFactory /* NativeServiceClientFactory */ {
      * @return
      */
     private static String getClientImplKey(Class<?> iface, String alternative) {
-        return iface.getCanonicalName() + "_#" + alternative;
+        if (ClientServiceFactory.MULIT_MODE) {
+            return iface.getCanonicalName() + "_#" + alternative;
+        } else {
+            return iface.getCanonicalName() + "_#1";
+        }
     }
 
     /**
@@ -171,15 +211,6 @@ public class NSCFactory /* NativeServiceClientFactory */ {
             e.printStackTrace();
         }
         return indexer.complete();
-    }
-
-    // -------------------------------------------------TEST-----------------------------------------------------//
-    private static void debugCtClass(CtClass ctClass) {
-        try {
-            ctClass.writeFile("D:/classes");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 }

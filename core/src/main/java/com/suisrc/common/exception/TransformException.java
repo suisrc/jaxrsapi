@@ -13,8 +13,12 @@ public class TransformException extends RuntimeException {
         return new TransformException(t);
     }
 
-    private TransformException(Throwable t) {
+    public TransformException(Throwable t) {
         super(t);
+    }
+
+    public TransformException(String err) {
+        super(err);
     }
 
 }

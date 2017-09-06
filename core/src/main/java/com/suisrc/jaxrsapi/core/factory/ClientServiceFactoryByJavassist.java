@@ -1,4 +1,4 @@
-package com.suisrc.jaxrsapi.core.runtime;
+package com.suisrc.jaxrsapi.core.factory;
 
 /**
  * 生成执行的代理实体 使用javassist对java代码进行动态生成。

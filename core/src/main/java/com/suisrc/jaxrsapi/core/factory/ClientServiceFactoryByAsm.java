@@ -1,4 +1,4 @@
-package com.suisrc.jaxrsapi.core.runtime;
+package com.suisrc.jaxrsapi.core.factory;
 
 /**
  * 代码参考wildfly-swarm
