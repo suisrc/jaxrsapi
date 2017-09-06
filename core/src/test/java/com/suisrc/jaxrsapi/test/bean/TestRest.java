@@ -1,9 +1,9 @@
 package com.suisrc.jaxrsapi.test.bean;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
@@ -27,7 +27,7 @@ public interface TestRest {
     @GET
     @Path("cgi-bin/token")
     @Produces(MediaType.APPLICATION_JSON)
-    String getApi_1(@QueryParam("grant_type") TestBean grantType);
+    String getApi_1(@BeanParam TestBean grantType);
     /**
      * ThreadValue, Value, DefaultValue使用
      */
