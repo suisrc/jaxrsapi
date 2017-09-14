@@ -1,12 +1,11 @@
 package com.suisrc.jaxrsapi.core.annotation;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.*;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
-import com.suisrc.jaxrsapi.core.Global;
 
 /**
  * 获取服务器系统中的数据
@@ -34,9 +33,9 @@ public @interface ThreadValue {
     /**
      * 通过线程上获取数据需要通过的静态class
      * 
-     * 默认使用Global类进行获取
+     * 默认使用Global类进行获取, 在解析器中定义
      */
-    Class<?> clazz() default Global.class;
+    Class<?> clazz() default Void.class;//Global.class;
 
     /**
      * 通过类中的静态方法进行获取数据

@@ -63,7 +63,7 @@ import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.TfDefaultValue;
 import com.suisrc.jaxrsapi.core.annotation.ThreadValue;
 import com.suisrc.jaxrsapi.core.annotation.Value;
-import com.suisrc.jaxrsapi.core.function.ReviseHandler;
+import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 
 import javassist.CannotCompileException;
 import javassist.CtClass;
@@ -401,6 +401,9 @@ public class ClientServiceFactory {
         // ThreadValue.class
         AnnotationValue ave = anno.value("clazz");
         String actname = ave != null ? ave.asClass().toString() : Global.class.getName();
+        if (actname.equals(Void.class.getName())) {
+            actname = Global.class.getName(); // ThreadValue默认clazz的配置为Void.class
+        }
         ave = anno.value("method");
         String metname = ave != null ? ave.asString() : ThreadValue.defaultMethod;
         String value = anno.value().asString();

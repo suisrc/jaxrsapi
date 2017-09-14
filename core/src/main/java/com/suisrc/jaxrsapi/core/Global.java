@@ -209,7 +209,7 @@ public class Global {
     /** ----------------------分割线 TODO 对默认值进行限定 */
 
     @SuppressWarnings("unchecked")
-    static <T> T getValue(Function<String, T> handler, String key, T defaultValue, T... candidate) {
+    public static <T> T getValue(Function<String, T> handler, String key, T defaultValue, T... candidate) {
         T value = handler.apply(key);
         return value != null && (candidate.length == 0 || Arrays.asList(candidate).contains(value)) ? value : defaultValue;
     }
@@ -221,7 +221,7 @@ public class Global {
      * @return
      */
     @SuppressWarnings("unchecked")
-    static <T> T getValue(String key) {
+    public static <T> T getValue(String key) {
         if (key.startsWith(Consts.PRE_THREAD)) {
             return Global.getThreadCache(key.substring(Consts.PRE_THREAD.length()));
         }

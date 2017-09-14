@@ -7,7 +7,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.suisrc.jaxrsapi.core.factory.ITransform4String;
+import com.suisrc.jaxrsapi.core.runtime.ITransform4Str;
 
 /**
  * 配合javax.ws.rs.DefaultValue注解使用，转换其内容
@@ -24,5 +24,5 @@ public @interface TfDefaultValue {
     /**
      * 该方法获取类型转换器
      */
-    Class<? extends ITransform4String<?>> value();
+    Class<? extends ITransform4Str<?>> value();
 }

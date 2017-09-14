@@ -1,6 +1,6 @@
 package com.suisrc.jaxrsapi.test.bean;
 
-import com.suisrc.jaxrsapi.core.function.ReviseHandler;
+import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 
 public class TReviseHandler implements ReviseHandler<String> {
 

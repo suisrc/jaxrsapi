@@ -1,4 +1,4 @@
-package com.suisrc.jaxrsapi.core.function;
+package com.suisrc.jaxrsapi.core.runtime;
 
 /**
  * 拦截数据，修正数据的接口

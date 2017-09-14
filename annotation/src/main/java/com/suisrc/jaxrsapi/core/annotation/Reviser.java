@@ -8,7 +8,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.suisrc.jaxrsapi.core.function.ReviseHandler;
+import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 
 /**
  * 对参数进行拦截修正 当注解在parameter和field上的时候，修正是对参数有效的， 当注解在method上的时候，修正是对结果集有效的
