@@ -62,11 +62,10 @@ public class JJAnnotation {
         if (hasAnnotate()) {
             AnnotationsAttribute attribute = new AnnotationsAttribute(constPool, AnnotationsAttribute.visibleTag);
             for (AnnoInfo anno : _annotations.values()) {
-                javassist.bytecode.annotation.Annotation annotation = new javassist.bytecode.annotation.Annotation(anno.annoType, constPool);
+                javassist.bytecode.annotation.Annotation annotation = 
+                        new javassist.bytecode.annotation.Annotation(anno.annoType, constPool);
+                anno.opts.forEach(opt -> opt.accept(constPool, annotation));
                 attribute.addAnnotation(annotation);
-                for(BiConsumer<ConstPool, javassist.bytecode.annotation.Annotation> opt : anno.opts) {
-                    opt.accept(constPool, annotation);
-                }
             }
             handler.accept(attribute);
         }

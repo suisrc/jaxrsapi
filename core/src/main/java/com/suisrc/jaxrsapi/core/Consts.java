@@ -82,6 +82,7 @@ public interface Consts {
      */
     String KEY_VALUE_PREFIX_DEFAULT = "com.suisrc.remote-api.values.default-container";
 
+    // ------------------------------------------Value KEY--------------------------------//
 
     /**
      * 获取API的基本路径地址

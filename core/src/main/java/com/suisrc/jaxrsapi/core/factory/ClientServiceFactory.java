@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -48,7 +47,6 @@ import org.jboss.jdeparser.JMod;
 import org.jboss.jdeparser.JParamDeclaration;
 import org.jboss.jdeparser.JTypes;
 import org.jboss.jdeparser.JVarDeclaration;
-import org.jboss.resteasy.client.jaxrs.ProxyBuilder;
 
 import com.suisrc.common.exception.NoSupportException;
 import com.suisrc.common.jdejst.JdeJst;
@@ -63,6 +61,8 @@ import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.TfDefaultValue;
 import com.suisrc.jaxrsapi.core.annotation.ThreadValue;
 import com.suisrc.jaxrsapi.core.annotation.Value;
+//import org.jboss.resteasy.client.jaxrs.ProxyBuilder;
+import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 
 import javassist.CannotCompileException;
@@ -516,7 +516,7 @@ public class ClientServiceFactory {
             JCall reviserExpr = getReviserMethodExpr(jjm, anno);
             methodExpr = reviserExpr.arg(methodExpr);
         }
-        body._return(methodExpr);
+        body._return(methodExpr.cast(method.returnType().name().toString()));
     }
 
     /**
@@ -593,41 +593,51 @@ public class ClientServiceFactory {
             proxyField = pf.getJVarDeclaration();
             proxyField.blockComment().text("远程代理访问客户端控制器");
         }
-
         jjc._import(ApiActivator.class);
         JJField af = jjc.field(JMod.PRIVATE, ApiActivator.class, Consts.FIELD_ACTIVATOR);
         JVarDeclaration activatorField = af.getJVarDeclaration();
         activatorField.blockComment().text("远程服务器控制器，具有服务器信息");
-        jjc._import(Inject.class);
-        jjc._import(Named.class);
-        anno = af.annotate(Inject.class);
-        anno = af.annotate(Named.class);
-        anno.value(named.value());
-        
-        // 激活器的get和set方法
-        jjc.getter(af, ServiceClient.MED_getActivator, "获取远程服务器控制器");
-        jjc.setter(af, ServiceClient.MED_setActivator, "配置远程服务器控制器");
-        
+
+        // initialize方法
         JJMethod im = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_initialize);
         JMethodDef initializeMethod = im.getJMethodDef();
         initializeMethod.docComment().text("初始化");
         // 构建实现部分
-        JBlock body = initializeMethod.body();
-        if (jjc.isOneTimeProxy()) {
-            return; // 不进行初始化处理
+        JBlock initializeBody = initializeMethod.body();
+        if (!jjc.isOneTimeProxy()) {
+            // 0170915 PostConstruct和@Inject存在不同步情况， 更改为在ServiceClient.MED_setActivator进行初始化操作
+            //jjc._import(PostConstruct.class);
+            //anno = initializeMethod.annotate(PostConstruct.class);
+            jjc._import(WebTarget.class);
+            jjc._import(ProxyBuilder.class);
+            JCall targetCall = JExprs.$v(activatorField).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
+            JVarDeclaration target = initializeBody.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
+            //JVarDeclaration target = initializeBody.var(0, WebTarget.class, "target", targetCall);
+            JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
+            proxyExpr.arg(JTypes.typeNamed(api).field("class"));
+            proxyExpr.arg(JExprs.$v(target));
+            JCall buildExpr = proxyExpr.call("build");
+            initializeBody.assign(JExprs.$v(proxyField), buildExpr);
         }
-        jjc._import(PostConstruct.class);
-        jjc._import(WebTarget.class);
-        jjc._import(ProxyBuilder.class);
-        anno = initializeMethod.annotate(PostConstruct.class);
-        JCall targetCall = JExprs.$v(activatorField).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
-        JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
-        //JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall);
-        JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
-        proxyExpr.arg(JTypes.typeNamed(api).field("class"));
-        proxyExpr.arg(JExprs.$v(target));
-        JCall buildExpr = proxyExpr.call("build");
-        body.assign(JExprs.$v(proxyField), buildExpr);
+        
+        // 激活器的get和set方法
+        jjc.getter(af, ServiceClient.MED_getActivator, "获取远程服务器控制器");
+        // jjc.setter(af, ServiceClient.MED_setActivator, "配置远程服务器控制器");
+        jjc._import(Inject.class);
+        jjc._import(Named.class);
+        JJMethod am = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_setActivator);
+        anno = am.annotate(Inject.class);
+        anno = am.annotate(Named.class);
+        am.annotateValue(anno, "value", named.value());
+        JMethodDef activatorMethod = am.getJMethodDef();
+        activatorMethod.docComment().text("配置远程服务器控制器");
+        JParamDeclaration param = activatorMethod.param(af.getJVarDeclaration().type(), "pm");
+        JBlock activatorBody = activatorMethod.body();
+        JAssignableExpr paramVar = JExprs.$v(param);
+        activatorBody.assign(JExprs.$v(af.getJVarDeclaration()), paramVar);
+        // 判断参数是否为空
+        JIf jif = activatorBody._if(paramVar.ne(JExpr.NULL));
+        jif.call(ServiceClient.MED_initialize);
     }
     
     // ----------------------------------------------------------------------ZERO 构建入口

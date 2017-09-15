@@ -76,7 +76,7 @@ public class NativeServiceClientFactory {
 
     /**
      * 构建实体远程访问代理对象
-     * 
+     * 生成class代码
      * @param clazzes
      */
     public static void build(String target, Class<? extends ApiActivator>... clazzes) {
@@ -102,8 +102,7 @@ public class NativeServiceClientFactory {
                         Object apiObj = clazz.newInstance(); // 生成通信代理
                         if (apiObj instanceof ServiceClient) {
                             ServiceClient sc = (ServiceClient) apiObj;
-                            sc.setActivator(activator); // 设置激活器
-                            sc.init(); // 执行初始化
+                            sc.setActivator(activator); // 设置激活器 执行初始化
                         }
                         Named named = activator.getClass().getAnnotation(Named.class);
                         String key = getClientImplKey(api, named == null ? "" : named.value());

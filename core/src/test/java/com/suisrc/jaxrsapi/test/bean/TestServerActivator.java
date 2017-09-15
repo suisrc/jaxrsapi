@@ -29,7 +29,7 @@ public class TestServerActivator implements ApiActivator {
 
     @Override
     public Set<Class<?>> getClasses() {
-        return Sets.newHashSet(TestRest.class, TestRest3.class);
+        return Sets.newHashSet(TestRest.class);
     }
 
     

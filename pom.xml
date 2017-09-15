@@ -60,6 +60,7 @@
         <version.httpclient>4.5.2</version.httpclient>
         <version.commons-codec>1.9</version.commons-codec>
         <version.jdeparser>2.0.2.Final</version.jdeparser>
+        <version.swagger-annotations>1.5.13</version.swagger-annotations>
         <!-- test -->
         <version.junit>4.12</version.junit>
     </properties>

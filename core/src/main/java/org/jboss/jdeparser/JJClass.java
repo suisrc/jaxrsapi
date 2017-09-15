@@ -186,7 +186,7 @@ public class JJClass extends JJAnnotation {
      * @param ctClass
      */
     private void createMethodSetInfo(CtClass ctClass) {
-        methodGets.entrySet().forEach(et -> {
+        methodSets.entrySet().forEach(et -> {
             try {
                 ctClass.addMethod(CtNewMethod.setter(et.getKey(), et.getValue().getCtField()));
             } catch (CannotCompileException e) {
