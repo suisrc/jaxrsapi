@@ -227,4 +227,17 @@ public class JaxrsapiUtils {
             return "error";
         }
     }
+    
+    /**
+     * 创建一个类型实体
+     * @param clazz
+     * @return
+     */
+    public static <T> T newInstance(Class<T> clazz) {
+        try {
+            return clazz.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
