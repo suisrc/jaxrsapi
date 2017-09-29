@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.suisrc.jaxrsapi</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1</version>
     <packaging>pom</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -35,7 +35,7 @@
 
     <properties>
         <!-- module -->
-        <module.version>1.0.1-SNAPSHOT</module.version>
+        <module.version>1.0.1</module.version>
         <!-- configuration -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -167,11 +167,17 @@
             <id>release</id>
             <build>
                 <plugins>
-                    <!-- <plugin> <groupId>org.sonatype.plugins</groupId> 
-                        <artifactId>nexus-staging-maven-plugin</artifactId> <version>${version.nexus-staging-maven-plugin}</version> 
-                        <extensions>true</extensions> <configuration> <serverId>oss-maven</serverId> 
-                        <nexusUrl>https://oss.sonatype.org/</nexusUrl> <autoReleaseAfterClose>true</autoReleaseAfterClose> 
-                        </configuration> </plugin> -->
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${version.nexus-staging-maven-plugin}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>oss-maven</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-release-plugin</artifactId>

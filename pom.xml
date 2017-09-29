@@ -167,11 +167,17 @@
             <id>release</id>
             <build>
                 <plugins>
-                    <!-- <plugin> <groupId>org.sonatype.plugins</groupId> 
-                        <artifactId>nexus-staging-maven-plugin</artifactId> <version>${version.nexus-staging-maven-plugin}</version> 
-                        <extensions>true</extensions> <configuration> <serverId>oss-maven</serverId> 
-                        <nexusUrl>https://oss.sonatype.org/</nexusUrl> <autoReleaseAfterClose>true</autoReleaseAfterClose> 
-                        </configuration> </plugin> -->
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${version.nexus-staging-maven-plugin}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>oss-maven</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-release-plugin</artifactId>
