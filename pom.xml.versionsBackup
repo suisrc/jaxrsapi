@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.suisrc.jaxrsapi</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -35,7 +35,7 @@
 
     <properties>
         <!-- module -->
-        <module.version>1.0.2-SNAPSHOT</module.version>
+        <module.version>1.0.1-SNAPSHOT</module.version>
         <!-- configuration -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
