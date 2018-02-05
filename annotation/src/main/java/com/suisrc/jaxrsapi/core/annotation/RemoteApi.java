@@ -17,4 +17,6 @@ import java.lang.annotation.Target;
 @Target({TYPE/* , METHOD, FIELD */ })
 @Retention(RUNTIME)
 public @interface RemoteApi {
+    
+    String value() default "";
 }

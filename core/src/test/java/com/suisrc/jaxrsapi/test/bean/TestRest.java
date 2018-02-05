@@ -17,7 +17,7 @@ import com.suisrc.jaxrsapi.core.annotation.ThreadValue;
  * @author Y13
  *
  */
-@RemoteApi
+@RemoteApi("test")
 //@OneTimeProxy
 public interface TestRest {
 

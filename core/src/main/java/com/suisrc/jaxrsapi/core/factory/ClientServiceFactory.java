@@ -3,6 +3,7 @@ package com.suisrc.jaxrsapi.core.factory;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +29,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jdeparser.JAnnotation;
@@ -57,6 +58,7 @@ import com.suisrc.jaxrsapi.core.ServiceClient;
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
 import com.suisrc.jaxrsapi.core.annotation.NonProxy;
 import com.suisrc.jaxrsapi.core.annotation.OneTimeProxy;
+import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.TfDefaultValue;
 import com.suisrc.jaxrsapi.core.annotation.ThreadValue;
@@ -107,7 +109,7 @@ public class ClientServiceFactory {
      * @return
      * @throws Exception
      */
-    private void createImpl(ApiActivator activator, Index index, JJClass jjc, ClassInfo classInfo) throws Exception {
+    private void createImpl(ApiActivator activator, IndexView index, JJClass jjc, ClassInfo classInfo) throws Exception {
         createClassInfo(activator, jjc, classInfo);
         for (MethodInfo methodInfo : classInfo.methods()) {
             if (isProxyMethod(methodInfo)) {
@@ -143,7 +145,7 @@ public class ClientServiceFactory {
      * @throws NotFoundException
      * @throws ClassNotFoundException
      */
-    private void createMethodInfo(ApiActivator activator, Index index, JJClass jjc, MethodInfo method)
+    private void createMethodInfo(ApiActivator activator, IndexView index, JJClass jjc, MethodInfo method)
             throws CannotCompileException, ClassNotFoundException, NotFoundException {
         // 创建方法
         JJMethod jjm = jjc.method(JMod.PUBLIC, method.returnType().name().toString(), method.name());
@@ -611,7 +613,19 @@ public class ClientServiceFactory {
             jjc._import(WebTarget.class);
             jjc._import(ProxyBuilder.class);
             JCall targetCall = JExprs.$v(activatorField).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
-            JVarDeclaration target = initializeBody.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
+            JExpr targetJExpr = targetCall.cast(WebTarget.class);
+            // 0180205 增加对@RemoteApi的使用
+            List<AnnotationInstance> annoIs = classInfo.annotations().get(DotName.createSimple(RemoteApi.class.getName()));
+            if (annoIs != null && !annoIs.isEmpty()) {
+                // 如果存在，有且仅有一个
+                AnnotationInstance ai = annoIs.get(0);
+                AnnotationValue av;
+                String rp;
+                if ((av = ai.value()) != null && !(rp = av.asString()).isEmpty()) {
+                    targetJExpr = targetJExpr.call("path").arg(JExprs.str(rp));
+                }
+            }
+            JVarDeclaration target = initializeBody.var(0, WebTarget.class, "target", targetJExpr);
             //JVarDeclaration target = initializeBody.var(0, WebTarget.class, "target", targetCall);
             JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
             proxyExpr.arg(JTypes.typeNamed(api).field("class"));
@@ -649,8 +663,8 @@ public class ClientServiceFactory {
      * @param acceptThen
      * @throws Exception
      */
-    public static void processIndex(Index index, BiConsumer<Class<?>, CtClass> acceptThen) throws Exception {
-        List<ClassInfo> activatorClasses = index.getKnownDirectImplementors((DotName.createSimple(ApiActivator.class.getName())));
+    public static void processIndex(IndexView index, BiConsumer<Class<?>, CtClass> acceptThen) throws Exception {
+        Collection<ClassInfo> activatorClasses = index.getKnownDirectImplementors((DotName.createSimple(ApiActivator.class.getName())));
         Set<Class<?>> activatorSet = new HashSet<>();
         Set<Class<?>> subclasses = new HashSet<>(); // 用于判断是否为其他实体的继承
         for (ClassInfo activatorClass : activatorClasses) {
@@ -682,7 +696,7 @@ public class ClientServiceFactory {
      * @param targetFile
      * @throws Exception
      */
-    static void createImpl(ApiActivator activator, Index index, JdeJst jj, Consumer<JdeJst> accpetThen) throws Exception {
+    static void createImpl(ApiActivator activator, IndexView index, JdeJst jj, Consumer<JdeJst> accpetThen) throws Exception {
         int offset = ++baseOffset; // 偏移量递进
         ClientServiceFactory factory = new ClientServiceFactory();
         try {
@@ -708,7 +722,7 @@ public class ClientServiceFactory {
      * @param acceptThen
      * @throws Exception
      */
-    static void createImpl(ApiActivator activator, Index index, BiConsumer<Class<?>, CtClass> acceptThen) throws Exception {
+    static void createImpl(ApiActivator activator, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen) throws Exception {
         createImpl(activator, index, new JdeJst(), jj -> {
             Map<Object, CtClass> ctClasses = jj.writeSource();
             ctClasses.entrySet().forEach(v -> acceptThen.accept((Class<?>)v.getKey(), v.getValue()));
@@ -722,7 +736,7 @@ public class ClientServiceFactory {
      * @param targetFile
      * @throws Exception
      */
-    static void createImpl(ApiActivator activator, Index index, String targetFile) throws Exception {
+    static void createImpl(ApiActivator activator, IndexView index, String targetFile) throws Exception {
         JdeJst jjst = new JdeJst();
         jjst.setTarget(new File(targetFile));
         jjst.setShowSrc(true); // 需要输出文件

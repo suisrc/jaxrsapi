@@ -9,7 +9,7 @@ import java.util.Set;
 
 import javax.inject.Named;
 
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
@@ -85,7 +85,7 @@ public class NativeServiceClientFactory {
         } 
 
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        Index index = createIndexer(loader, clazzes);
+        IndexView index = createIndexer(loader, clazzes);
         // 前期 clientImpls 中都是ApiActivator对象
         for (Object activatorObj : clientImpls.values().toArray()) {
             ApiActivator activator = (ApiActivator) activatorObj;
@@ -128,7 +128,7 @@ public class NativeServiceClientFactory {
         } 
 
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        Index index = createIndexer(loader, clazzes);
+        IndexView index = createIndexer(loader, clazzes);
         // 前期 clientImpls 中都是ApiActivator对象
         for (Object activatorObj : clientImpls.values().toArray()) {
             ApiActivator activator = (ApiActivator) activatorObj;
@@ -183,7 +183,7 @@ public class NativeServiceClientFactory {
      * @param clazzes
      * @return
      */
-    private static Index createIndexer(ClassLoader loader, Class<? extends ApiActivator>... clazzes) {
+    private static IndexView createIndexer(ClassLoader loader, Class<? extends ApiActivator>... clazzes) {
         Indexer indexer = new Indexer();
         try {
             Set<Class<?>> useClasses = new HashSet<>();

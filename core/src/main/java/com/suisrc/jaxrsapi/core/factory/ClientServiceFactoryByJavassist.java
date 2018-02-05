@@ -67,7 +67,7 @@ public class ClientServiceFactoryByJavassist {
 //     * @return
 //     * @throws Exception
 //     */
-//    private static CtClass createImpl(ApiActivator activator, Index index, ClassPool ctPool, String implName,
+//    private static CtClass createImpl(ApiActivator activator, IndexView index, ClassPool ctPool, String implName,
 //            ClassInfo classInfo) throws Exception {
 //        Named named = activator.getClass().getAnnotation(Named.class);
 //        if (named == null) {
@@ -112,7 +112,7 @@ public class ClientServiceFactoryByJavassist {
 //     * @throws NotFoundException
 //     * @throws ClassNotFoundException
 //     */
-//    private static void createMethod(Index index, ClassPool ctPool, CtClass ctClass, MethodInfo method)
+//    private static void createMethod(IndexView index, ClassPool ctPool, CtClass ctClass, MethodInfo method)
 //            throws CannotCompileException, ClassNotFoundException, NotFoundException {
 //
 //        List<Type> parameters = method.parameters(); // 获取参数的
@@ -404,7 +404,7 @@ public class ClientServiceFactoryByJavassist {
 //     * @param acceptThen
 //     * @throws Exception
 //     */
-//    public static void processIndex(Index index, BiConsumer<Class<?>, CtClass> acceptThen) throws Exception {
+//    public static void processIndex(IndexView index, BiConsumer<Class<?>, CtClass> acceptThen) throws Exception {
 //        ClassPool ctPool = ClassPool.getDefault();
 //        List<ClassInfo> activatorClasses =
 //                index.getKnownDirectImplementors((DotName.createSimple(ApiActivator.class.getName())));
@@ -440,7 +440,7 @@ public class ClientServiceFactoryByJavassist {
 //     * @param acceptThen
 //     * @throws Exception
 //     */
-//    static void createImpl(ApiActivator activator, Index index, ClassPool ctPool, BiConsumer<Class<?>, CtClass> acceptThen)
+//    static void createImpl(ApiActivator activator, IndexView index, ClassPool ctPool, BiConsumer<Class<?>, CtClass> acceptThen)
 //            throws Exception {
 //        int offset = ++baseOffset; // 偏移量递进
 //        for (Class<?> apiClass : activator.getClasses()) {
