@@ -1,0 +1,16 @@
+.project
+.settings/
+.classpath
+*.class
+MANIFEST.MF
+pom.properties
+*.log
+*.log.*
+.externalToolBuilders/
+target/
+import.sql
+*.yml
+*.obj
+*_T.java
+*_T2.java
+*_T3.java

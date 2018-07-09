@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.suisrc.jaxrsapi</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.1</version>
+    <packaging>pom</packaging>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>restful remote access support framework</description>
+    <url>https://suisrc.github.io/jaxrsapi/</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Y13.lin</name>
+            <email>suisrc@outlook.com</email>
+            <!-- <organization>suisrc</organization> <organizationUrl>https://suisrc.com</organizationUrl> -->
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/suisrc/jaxrsapi.git</connection>
+        <developerConnection>scm:git:https://github.com/suisrc/jaxrsapi.git</developerConnection>
+        <url>https://suisrc.github.io/jaxrsapi</url>
+        <tag>1.0.0</tag>
+    </scm>
+
+    <properties>
+        <!-- module -->
+        <module.version>1.0.1</module.version>
+        <!-- configuration -->
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <version.maven-compiler-plugin>3.6.1</version.maven-compiler-plugin>
+        <version.maven-jar-plugin>3.0.2</version.maven-jar-plugin>
+        <version.maven-source-plugin>3.0.1</version.maven-source-plugin>
+        <version.maven-javadoc-plugin>2.10.4</version.maven-javadoc-plugin>
+        <version.maven-release-plugin>2.5.3</version.maven-release-plugin>
+        <version.maven-gpg-plugin>1.6</version.maven-gpg-plugin>
+        <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
+        <!-- frame -->
+        <javaee.version>7.0</javaee.version>
+        <version.resteasy>3.1.2.Final</version.resteasy>
+        <version.reflections>0.9.10</version.reflections>
+        <version.jandex>2.0.3.Final</version.jandex>
+        <version.asm>5.2</version.asm>
+        <version.fasterxml>2.7.4</version.fasterxml>
+        <version.woodstox>4.4.1</version.woodstox>
+        <version.deltaspike>1.7.2</version.deltaspike>
+        <version.httpclient>4.5.2</version.httpclient>
+        <version.commons-codec>1.9</version.commons-codec>
+        <version.jdeparser>2.0.2.Final</version.jdeparser>
+        <version.swagger-annotations>1.5.13</version.swagger-annotations>
+        <!-- test -->
+        <version.junit>4.12</version.junit>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>javax</groupId>
+                <artifactId>javaee-api</artifactId>
+                <version>${javaee.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.suisrc.jaxrsapi</groupId>
+                <artifactId>core</artifactId>
+                <version>${module.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.suisrc.jaxrsapi</groupId>
+                <artifactId>annotation</artifactId>
+                <version>${module.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${version.junit}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <!-- compiler-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${version.maven-compiler-plugin}</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${version.maven-jar-plugin}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/suisrc/jaxrsapi/test/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!-- source-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${version.maven-source-plugin}</version>
+                <configuration>
+                    <charset>UTF-8</charset>
+                    <docencoding>UTF-8</docencoding>
+                    <outputEncoding>UTF-8</outputEncoding>
+                    <sourceEncoding>UTF-8</sourceEncoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <distributionManagement>
+        <!-- <snapshotRepository> <id>suisrc-maven</id> <name>Maven suisrc 
+            Snapshots</name> <url>http://mvn.suisrc.com/repository/maven-snapshots/</url> 
+            </snapshotRepository> -->
+        <!-- <repository> <id>suisrc-maven</id> <name>Maven suisrc Releases</name> 
+            <url>http://mvn.suisrc.com/repository/maven-releases/</url> </repository> -->
+        <!-- <snapshotRepository> <id>icgear-maven</id> <name>Maven 254 Snapshots</name> 
+            <url>http://192.168.0.254:12135/repository/maven-snapshots/</url> </snapshotRepository> -->
+        <snapshotRepository>
+            <id>oss-maven</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>oss-maven</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+    </distributionManagement>
+    <!-- <repositories> <repository> <id>suisrc-snapshots</id> <name>Maven 
+        suisrc Snapshots</name> <url>http://mvn.suisrc.com/repository/maven-snapshots/</url> 
+        <releases> <enabled>false</enabled> </releases> <snapshots> <enabled>true</enabled> 
+        </snapshots> </repository> </repositories> -->
+
+    <modules>
+        <module>core</module>
+        <module>annotation</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${version.nexus-staging-maven-plugin}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>oss-maven</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>${version.maven-release-plugin}</version>
+                        <configuration>
+                            <autoVersionSubmodules>true</autoVersionSubmodules>
+                            <useReleaseProfile>false</useReleaseProfile>
+                            <releaseProfiles>release</releaseProfiles>
+                            <goals>deploy</goals>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${version.maven-gpg-plugin}</version>
+                        <!-- <configuration> <skip>true</skip> </configuration> -->
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${version.maven-javadoc-plugin}</version>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
