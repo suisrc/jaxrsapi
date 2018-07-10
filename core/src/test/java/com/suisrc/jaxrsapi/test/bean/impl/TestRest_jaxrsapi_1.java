@@ -6,7 +6,9 @@ import com.suisrc.jaxrsapi.test.bean.TReviseHandler;
 import com.suisrc.jaxrsapi.test.bean.T4Str;
 import java.lang.String;
 import javax.enterprise.context.ApplicationScoped;
+import java.lang.Exception;
 import com.suisrc.jaxrsapi.test.bean.TLProxy;
+import com.suisrc.jaxrsapi.test.bean.RetryPredicateImpl;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.test.bean.TestBean;
 import com.suisrc.jaxrsapi.core.ServiceClient;
@@ -23,7 +25,7 @@ import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-07-06T20:52:46.860
+ *   2018-07-10T14:05:49.459
  * <author>
  *   Y13
  */
@@ -101,7 +103,20 @@ public class TestRest_jaxrsapi_1 implements TestRest, ServiceClient {
 
         }
         pm0.setName((new TReviseHandler()).accept(pm0.getName()));
-        return (String)proxy.getApi_1(pm0);
+        RetryPredicateImpl predicate = new RetryPredicateImpl(activator);
+        int count = 0x10;
+        String result = null;
+        Exception exception = null;
+        do {
+            result = null;
+            exception = null;
+            try {
+                result = (new TReviseHandler()).accept(proxy.getApi_1(pm0));
+            } catch (Exception e) {
+                exception = e;
+            }
+        } while (predicate.test(0x10, --count, result, exception) && count > 0);
+        return result;
     }
     /**
      * 接口实现

@@ -36,6 +36,7 @@ import org.jboss.jdeparser.JAnnotation;
 import org.jboss.jdeparser.JAssignableExpr;
 import org.jboss.jdeparser.JBlock;
 import org.jboss.jdeparser.JCall;
+import org.jboss.jdeparser.JCatch;
 import org.jboss.jdeparser.JDocComment;
 import org.jboss.jdeparser.JExpr;
 import org.jboss.jdeparser.JExprs;
@@ -46,6 +47,8 @@ import org.jboss.jdeparser.JJMethod;
 import org.jboss.jdeparser.JMethodDef;
 import org.jboss.jdeparser.JMod;
 import org.jboss.jdeparser.JParamDeclaration;
+import org.jboss.jdeparser.JTry;
+import org.jboss.jdeparser.JType;
 import org.jboss.jdeparser.JTypes;
 import org.jboss.jdeparser.JVarDeclaration;
 
@@ -59,10 +62,12 @@ import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
 import com.suisrc.jaxrsapi.core.annotation.NonProxy;
 import com.suisrc.jaxrsapi.core.annotation.OneTimeProxy;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
+import com.suisrc.jaxrsapi.core.annotation.Retry;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.TfDefaultValue;
 import com.suisrc.jaxrsapi.core.annotation.Value;
 import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
+import com.suisrc.jaxrsapi.core.runtime.RetryPredicate;
 import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 
 import javassist.CannotCompileException;
@@ -270,7 +275,7 @@ public class ClientServiceFactory {
             createParamReviserInfo(jjm, body, params.get(position), anno, methodExpr);
         }
         // -------------------------------------------------------------------------------ZERO 返回值处理
-        creatReturnInfo(jjm, body, method, params);
+        createReturnInfo(jjm, body, method, params);
         // -------------------------------------------------------------------------------ZERO 异常处理
         if (method.exceptions() != null && !method.exceptions().isEmpty()) {
             for (Type type : method.exceptions()) {
@@ -432,58 +437,146 @@ public class ClientServiceFactory {
      * @param anno
      * @return
      */
-    private void creatReturnInfo(JJMethod jjm, JBlock body, MethodInfo method, List<JParamDeclaration> params) {
-        JCall methodExpr;
+    private void createReturnInfo(JJMethod jjm, JBlock body, MethodInfo method, List<JParamDeclaration> params) {
+        // 本地代理请求注解
         AnnotationInstance anno = method.annotation(DotName.createSimple(LocalProxy.class.getName()));
-        if (anno != null) {
-            String className = anno.value().asClass().name().toString(); // 代理的类型
-            AnnotationValue annoValue = anno.value("master");
-            String construct = annoValue == null ? Consts.NONE : annoValue.asString();
-            annoValue = anno.value("method");
-            String methodName = annoValue == null ? LocalProxy.defaultMethod : annoValue.asString();
-            // 赋值
-            jjm.getJJClass()._import(className);
-            JCall proxy = JTypes.typeNamed(className)._new();
-            if (!construct.isEmpty()) {
-                proxy.arg(JExprs.$v(construct));
-            }
-            methodExpr = proxy.call(methodName);
-             JCall baseUrl = JExprs.$v(Consts.FIELD_ACTIVATOR).call("getBaseUrl");
-             JExpr path = baseUrl;
-             if (jjm.getJJClass().getRootPath() != null) {
-                 path = path.plus(JExprs.str("/" + jjm.getJJClass().getRootPath()));
-             }
-             methodExpr.arg(path.plus(JExprs.str(getMethodUri(method))));
-//            methodExpr.arg(JExprs.str(getMethodUri(method)));
-        } else {
-            if (jjm.getJJClass().isOneTimeProxy()) {
-                String proxyType = method.declaringClass().name().toString();
-                
-                jjm.getJJClass()._import(WebTarget.class);
-                jjm.getJJClass()._import(ProxyBuilder.class);
-                JCall targetCall = JExprs.$v(Consts.FIELD_ACTIVATOR).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
-                JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
-                JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
-                proxyExpr.arg(JTypes.typeNamed(proxyType).field("class"));
-                proxyExpr.arg(JExprs.$v(target));
-                JCall buildExpr = proxyExpr.call("build");
-                
-                JAssignableExpr proxy = JExprs.$v(body.var(0, proxyType, "proxy", buildExpr));
-                methodExpr = proxy.call(method.name());
-            } else {
-                methodExpr = JExprs.$v(Consts.FIELD_PROXY).call(method.name());
-            }
-        }
+        // 数据请求方法
+        JCall methodExpr = anno != null ? createLocalProxyReturnInfo(jjm, method, anno) : createRemoteProxyResultInfo(jjm, body, method);
         // 给出方法的参数
         for (JParamDeclaration param : params) {
             methodExpr.arg(JExprs.$v(param));
         }
+        // 对方返回值内容是否需要进行处理
         anno = method.annotation(DotName.createSimple(Reviser.class.getName()));
         if (anno != null) {
             JCall reviserExpr = getReviserMethodExpr(jjm, anno);
             methodExpr = reviserExpr.arg(methodExpr);
         }
-        body._return(methodExpr.cast(method.returnType().name().toString()));
+        // 对于请求的内容，是否支持重试
+        anno = method.annotation(DotName.createSimple(Retry.class.getName()));
+        JExpr result = anno == null ? methodExpr.cast(method.returnType().name().toString()) : getRetryExpr(jjm, body, method, methodExpr, anno);
+        // 设定返回值
+        body._return(result);
+    }
+
+    /**
+     * 获取重试内容的代码片段
+     * 
+     *  RetryPredicateImpl predicate = new RetryPredicateImpl();
+     *  int count = 2;
+     *  String result = null;
+     *  Exception exception = null;
+     *  do {
+     *      result = null;
+     *      exception = null;
+     *      try {
+     *          result = (String)proxy.getApi_1(pm0);
+     *      } catch (Exception e) {
+     *          exception = e;
+     *      }
+     *  } while (predicate.test(2, --count, result, exception) && count > 0);
+     *  return result;
+     *  
+     * 没有给参数，参数这里无法给出
+     */
+    private JExpr getRetryExpr(JJMethod jjm, JBlock body, MethodInfo method, JCall jcm, AnnotationInstance anno) {
+        // Retry.class
+        String clazz = anno.value().asClass().name().toString(); // 类型
+        AnnotationValue ave = anno.value("master"); // 初始化构造时候，使用的构造参数
+        String master = ave == null ? Consts.NONE : ave.asString();
+        ave = anno.value("count");
+        int count = ave == null ? 2 : ave.asInt();
+        // 构建代码
+        jjm.getJJClass()._import(clazz);
+        JType testType = JTypes.typeNamed(clazz); //断言类型
+        JCall testNew = testType._new();
+        if (!master.isEmpty()) {
+            testNew.arg(JExprs.$v(master));
+        }
+        jjm.getJJClass()._import(Exception.class);
+        JVarDeclaration predicateVar = body.var(0, testType, "predicate", testNew);
+        JVarDeclaration countVar = body.var(0, JType.INT, "count", JExprs.hex(count));
+        JVarDeclaration resultVar = body.var(0, JTypes.typeNamed(method.returnType().name().toString()), "result", JExpr.NULL);
+        JVarDeclaration exceptionVar = body.var(0, JTypes.typeOf(Exception.class), "exception", JExpr.NULL);
+
+        JAssignableExpr predicateExpr = JExprs.$v(predicateVar);
+        JAssignableExpr countExpr = JExprs.$v(countVar);
+        JAssignableExpr resultExpr = JExprs.$v(resultVar);
+        JAssignableExpr exceptionExpr = JExprs.$v(exceptionVar);
+        
+        JCall testCall = predicateExpr.call(RetryPredicate.METHOD);
+        testCall.arg(JExprs.hex(count));
+        testCall.arg(countExpr.preDec());
+        testCall.arg(resultExpr);
+        testCall.arg(exceptionExpr);
+        JBlock doBlock = body._do(testCall.and(countExpr.gt(JExpr.ZERO)));
+
+        doBlock.assign(resultExpr, JExpr.NULL);
+        doBlock.assign(exceptionExpr, JExpr.NULL);
+        JTry doTry = doBlock._try();
+        doTry.assign(resultExpr, jcm);
+        JCatch doCatch = doTry._catch(0, Exception.class, " e"); // 此处与bug, 必须是“ e”, 否则生成的代码有问题
+        doCatch.assign(exceptionExpr, JExprs.$v("e"));
+        
+        return JExprs.$v(resultVar);
+    }
+
+    /**
+     * 获取远程返回请求代理返回值
+     * @param jjm
+     * @param body
+     * @param method
+     * @return
+     */
+    private JCall createRemoteProxyResultInfo(JJMethod jjm, JBlock body, MethodInfo method) {
+        JCall methodExpr;
+        if (jjm.getJJClass().isOneTimeProxy()) {
+            String proxyType = method.declaringClass().name().toString();
+            
+            jjm.getJJClass()._import(WebTarget.class);
+            jjm.getJJClass()._import(ProxyBuilder.class);
+            JCall targetCall = JExprs.$v(Consts.FIELD_ACTIVATOR).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
+            JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
+            JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
+            proxyExpr.arg(JTypes.typeNamed(proxyType).field("class"));
+            proxyExpr.arg(JExprs.$v(target));
+            JCall buildExpr = proxyExpr.call("build");
+            
+            JAssignableExpr proxy = JExprs.$v(body.var(0, proxyType, "proxy", buildExpr));
+            methodExpr = proxy.call(method.name());
+        } else {
+            methodExpr = JExprs.$v(Consts.FIELD_PROXY).call(method.name());
+        }
+        return methodExpr;
+    }
+
+    /**
+     * 获取本地代理请求返回值
+     * @param jjm
+     * @param method
+     * @param anno
+     * @return
+     */
+    private JCall createLocalProxyReturnInfo(JJMethod jjm, MethodInfo method, AnnotationInstance anno) {
+        String className = anno.value().asClass().name().toString(); // 代理的类型
+        AnnotationValue annoValue = anno.value("master");
+        String construct = annoValue == null ? Consts.NONE : annoValue.asString();
+        annoValue = anno.value("method");
+        String methodName = annoValue == null ? LocalProxy.defaultMethod : annoValue.asString();
+        // 赋值
+        jjm.getJJClass()._import(className);
+        JCall proxy = JTypes.typeNamed(className)._new();
+        if (!construct.isEmpty()) {
+            proxy.arg(JExprs.$v(construct));
+        }
+        JCall methodExpr = proxy.call(methodName);
+         JCall baseUrl = JExprs.$v(Consts.FIELD_ACTIVATOR).call("getBaseUrl");
+         JExpr path = baseUrl;
+         if (jjm.getJJClass().getRootPath() != null) {
+             path = path.plus(JExprs.str("/" + jjm.getJJClass().getRootPath()));
+         }
+         methodExpr.arg(path.plus(JExprs.str(getMethodUri(method))));
+        return methodExpr;
     }
 
     /**

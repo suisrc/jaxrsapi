@@ -26,7 +26,7 @@ public @interface Reviser {
     Class<? extends ReviseHandler<?>> value();
 
     /**
-     * Handler 构造的时候是否带有所有者信息
+     * ReviseHandler 构造的时候是否带有所有者信息
      */
     String master() default "";
 

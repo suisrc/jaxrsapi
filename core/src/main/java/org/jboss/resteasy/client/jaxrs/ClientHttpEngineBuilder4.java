@@ -10,7 +10,7 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.params.HttpParams;
 import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 
-import com.suisrc.jaxrsapi.core.util.JaxrsapiUtils;
+import com.suisrc.core.utils.ReflectionUtils;
 
 /**
  * http client builder 为旧版本的client(4.3版本以下)提供技术支持
@@ -23,7 +23,7 @@ public class ClientHttpEngineBuilder4 {
 
     public static ClientHttpEngine initDefaultEngine4(ResteasyClientBuilder that) {
         try {
-            ApacheHttpClient4Engine engine = (ApacheHttpClient4Engine) JaxrsapiUtils.invokeDecared(ResteasyClientBuilder.class,
+            ApacheHttpClient4Engine engine = (ApacheHttpClient4Engine) ReflectionUtils.invokeDecared(ResteasyClientBuilder.class,
                     that, "initDefaultEngine", null, null);
             // 基本属性
             HostnameVerifier verifier = engine.getHostnameVerifier();
@@ -31,12 +31,12 @@ public class ClientHttpEngineBuilder4 {
             SchemeRegistry registry = engine.getHttpClient().getConnectionManager().getSchemeRegistry();
             SSLContext sslContext = engine.getSslContext();
             // 基本属性
-            Object connectionPoolSize = JaxrsapiUtils.invokeGetField(ResteasyClientBuilder.class, that, "connectionPoolSize");
-            Object connectionTTL = JaxrsapiUtils.invokeGetField(ResteasyClientBuilder.class, that, "connectionTTL");
-            Object connectionTTLUnit = JaxrsapiUtils.invokeGetField(ResteasyClientBuilder.class, that, "connectionTTLUnit");
-            Object maxPooledPerRoute = JaxrsapiUtils.invokeGetField(ResteasyClientBuilder.class, that, "maxPooledPerRoute");
-            Object defaultProxy = JaxrsapiUtils.invokeGetField(ResteasyClientBuilder.class, that, "defaultProxy");
-            Object responseBufferSize = JaxrsapiUtils.invokeGetField(ResteasyClientBuilder.class, that, "responseBufferSize");
+            Object connectionPoolSize = ReflectionUtils.invokeGetField(ResteasyClientBuilder.class, that, "connectionPoolSize");
+            Object connectionTTL = ReflectionUtils.invokeGetField(ResteasyClientBuilder.class, that, "connectionTTL");
+            Object connectionTTLUnit = ReflectionUtils.invokeGetField(ResteasyClientBuilder.class, that, "connectionTTLUnit");
+            Object maxPooledPerRoute = ReflectionUtils.invokeGetField(ResteasyClientBuilder.class, that, "maxPooledPerRoute");
+            Object defaultProxy = ReflectionUtils.invokeGetField(ResteasyClientBuilder.class, that, "defaultProxy");
+            Object responseBufferSize = ReflectionUtils.invokeGetField(ResteasyClientBuilder.class, that, "responseBufferSize");
 
             ClientHttpEngineProxy4 proxy = new ClientHttpEngineProxy4();
             proxy.setRegistrySafe(registry);

@@ -19,7 +19,7 @@ import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 import org.jboss.resteasy.client.jaxrs.internal.ClientInvocation;
 import org.jboss.resteasy.client.jaxrs.internal.ClientResponse;
 
-import com.suisrc.jaxrsapi.core.util.JaxrsapiUtils;
+import com.suisrc.core.utils.ReflectionUtils;
 
 /**
  * 远程访问执行代理 确保访问进行时候的线程安全 用于取代ApacheHttpClient4Engine
@@ -125,7 +125,7 @@ public class ClientHttpEngineProxy4 extends ApacheHttpClient4Engine implements C
         engine.setSslContext(sslContext);
         if (proxy != null) {
             // engine.setDefaultProxy(proxy);
-            JaxrsapiUtils.invoke(ApacheHttpClient4Engine.class, engine, "setDefaultProxy", new Class<?>[] {HttpHost.class},
+            ReflectionUtils.invoke(ApacheHttpClient4Engine.class, engine, "setDefaultProxy", new Class<?>[] {HttpHost.class},
                     new Object[] {proxy});
         }
         return engine;
