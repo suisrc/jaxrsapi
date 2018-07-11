@@ -39,4 +39,14 @@ public @interface Value {
      * 当然也可以使用不带前缀的变量名称
      */
     String value();
+    
+    /**
+     * 当发生重试（重新访问）事件后，是否重新获取变量
+     */
+    boolean retry() default false;
+    
+    /**
+     * 当变量为重试变量后，获取的变量的内容是否具有强制性，默认具有强制性（不判断是否有值，直接覆盖）
+     */
+    boolean reover() default true;
 }

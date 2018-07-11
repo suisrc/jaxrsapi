@@ -9,7 +9,7 @@ import com.suisrc.core.ScConsts;
  * @author Y13
  *
  */
-public interface Consts {
+public interface JaxrsapiConsts {
     
     /**
      * debug
@@ -30,7 +30,7 @@ public interface Consts {
      * 
      * 默认到构造集合
      */
-    final String PRE_DEFAULT = Global.getValue(System::getProperty, Consts.KEY_VALUE_PREFIX_DEFAULT, 
+    final String PRE_DEFAULT = Global.getValue(System::getProperty, JaxrsapiConsts.KEY_VALUE_PREFIX_DEFAULT, 
             null, // 没有默认值
             ScConsts.PRE_GLOBAL, // 全局
             ScConsts.PRE_THREAD, // 线程
