@@ -62,7 +62,7 @@ public abstract class SwarmTokenActivator extends AccessTokenActivator {
      * @return
      */
     protected String getTokenKeyByTopology() {
-        return getAppId() + "$$->&&" + getAppSecret();
+        return "$$JAXRSAPI_" + getAppName();
     }
     
     /**

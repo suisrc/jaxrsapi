@@ -78,10 +78,10 @@ public interface ApiActivator {
             return null;
         }
         T value = null;
-        if (key.indexOf(Consts.PRE_SPLIT) < 0) {
+        if (key.indexOf(JaxrsapiConsts.PRE_SPLIT) < 0) {
             // 使用默认变量环境
-            if (Consts.PRE_DEFAULT != null) {
-                value = Global.getValue(Consts.PRE_DEFAULT + key, type);
+            if (JaxrsapiConsts.PRE_DEFAULT != null) {
+                value = Global.getValue(JaxrsapiConsts.PRE_DEFAULT + key, type);
             }
         } else {
             // 直接查询

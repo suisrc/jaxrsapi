@@ -14,6 +14,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import com.suisrc.core.ScCDI;
 import com.suisrc.core.ScKey;
 import com.suisrc.core.exec.ScExecutor;
+import com.suisrc.jaxrsapi.core.filter.MonitorRequestFilter;
 
 /**
  * 程序入口配置抽象
@@ -24,7 +25,7 @@ public abstract class AbstractActivator implements ApiActivator {
     /**
      * 调试标记
      */
-    protected static final boolean DEBUG = Boolean.getBoolean(Consts.DEBUG);
+    protected static final boolean DEBUG = Boolean.getBoolean(JaxrsapiConsts.DEBUG);
 
     /**
      * 提供器工厂，序列化和反序列化对象
@@ -40,6 +41,15 @@ public abstract class AbstractActivator implements ApiActivator {
      * 访问的客户端，每个激活器一个
      */
     protected Client client;
+
+    /**
+     * 访问默认代理主机
+     */
+    protected String proxyHost = null;
+    /**
+     * 访问默认代理端口
+     */
+    protected int proxyPort = -1;
 
     /**
      * 构造方法
@@ -70,6 +80,10 @@ public abstract class AbstractActivator implements ApiActivator {
         ClientBuilder clientBuilder = createClientBuilder();// 配置网络通信内容
         if (clientBuilder instanceof ResteasyClientBuilder) {
             ResteasyClientBuilder rcBuilder = (ResteasyClientBuilder) clientBuilder;
+            if (proxyHost != null && proxyPort > 0) {
+                // 代理服务器访问
+                rcBuilder.defaultProxy(proxyHost, proxyPort);
+            }
             if (executor != null) {
                 rcBuilder.asyncExecutor(executor); // 配置线程池，默认使用线程池为固定大小最大10个线程
             }
@@ -80,7 +94,16 @@ public abstract class AbstractActivator implements ApiActivator {
             ClientBuilderFactory.initHttpEngineThreadSaft(rcBuilder);
         } 
         Client client = clientBuilder.build();
+        registerTargetClient(client);
         return client;
+    }
+
+    /**
+     * 对访问器注入监听等内容
+     * @param client
+     */
+    protected void registerTargetClient(Client client) {
+        client.register(new MonitorRequestFilter(this));
     }
 
     /**
@@ -95,6 +118,8 @@ public abstract class AbstractActivator implements ApiActivator {
      * 构造后被系统调用 进行内容初始化
      */
     public void postConstruct() {
+        proxyHost = createProxyHost();
+        proxyPort = createProxyPort();
         // 执行获取执行到线程池
         executor = createExecutorService();
         // 构建客户端创建器
@@ -126,5 +151,39 @@ public abstract class AbstractActivator implements ApiActivator {
             providerFactory = (ResteasyProviderFactory) value;
         }
     }
+    
+    // ----------------------------------------------------------------ZERO proxy
+    
+    /**
+     * 
+     * @return
+     */
+    public String getProxyHost() {
+        return proxyHost;
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public int getProxyPort() {
+        return proxyPort;
+    }
 
+    /**
+     * 
+     * @return
+     */
+    public String createProxyHost() {
+        return null;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public int createProxyPort() {
+        return -1;
+    }
+    
 }

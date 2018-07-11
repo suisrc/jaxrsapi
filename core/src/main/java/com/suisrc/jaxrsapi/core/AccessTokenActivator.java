@@ -19,16 +19,6 @@ import com.suisrc.jaxrsapi.core.token.TokenStatus;
 public abstract class AccessTokenActivator extends AbstractActivator {
     
     /**
-     * app id
-     */
-    protected String appId;
-
-    /**
-     * app secret
-     */
-    protected String appSecret;
-    
-    /**
      * 远程访问执行到地址
      */
     protected String baseUrl;
@@ -54,24 +44,18 @@ public abstract class AccessTokenActivator extends AbstractActivator {
      * 构造后被系统调用 进行内容初始化
      */
     public void postConstruct() {
-        appId = System.getProperty(getAppIdKey());
-        appSecret = System.getProperty(getAppSecretKey());
         baseUrl = System.getProperty(getBaseUrlKey());
         super.postConstruct();
         token = initToken();
     }
     
-    // ----------------------------------------------------------------ZERO 通用接口属性索引
+    // ----------------------------------------------------------------ZERO 通用接口属性索引    
     /**
-     * 获取key索引
+     * 获取应用的名称
      * @return
      */
-    protected abstract String getAppIdKey();
-    /**
-     * 获取密钥索引
-     * @return
-     */
-    protected abstract String getAppSecretKey();
+    public abstract String getAppName();
+
     /**
      * 获取基础路径索引
      * @return
@@ -129,7 +113,7 @@ public abstract class AccessTokenActivator extends AbstractActivator {
             // 重启
             tokenScheduler.restart();
         } else {
-            tokenScheduler = new CustomDelayScheduler("[" + getAppId() + "]更新令牌服务", s -> {
+            tokenScheduler = new CustomDelayScheduler("[" + getAppName() + "]更新令牌服务", s -> {
                 long delay = token.get().getExpiresIn() - getTokenAdvanceIn();
                 if (delay < 0) {
                     // 防止死锁，返回保留1s时间
@@ -141,7 +125,7 @@ public abstract class AccessTokenActivator extends AbstractActivator {
             tokenScheduler.start();
         }
     }
-    
+
     // ----------------------------------------------------------------ZERO Adapter
     /**
      * 获取系统中常用的数据配置 返回系统中常量数据
@@ -154,12 +138,6 @@ public abstract class AccessTokenActivator extends AbstractActivator {
         if (key.equals(getBaseUrlKey())) {
             return (T)getBaseUrl();
         }
-        if (key.equals(getAppIdKey())) {
-            return (T)getAppId();
-        }
-        if (key.equals(getAppSecretKey())) {
-            return (T)getAppSecret();
-        }
         return super.getAdapter(key);
     }
 
@@ -167,14 +145,6 @@ public abstract class AccessTokenActivator extends AbstractActivator {
     
     public String getBaseUrl() {
         return baseUrl;
-    }
-
-    public String getAppId() {
-        return appId;
-    }
-
-    public String getAppSecret() {
-        return appSecret;
     }
 
     //--------------------------------------------------ZERO AccessToken
@@ -264,9 +234,6 @@ public abstract class AccessTokenActivator extends AbstractActivator {
      * 初始化构造AccessToken
      */
     protected TokenReference initToken() {
-        if (getAppId() == null || getAppSecret() == null) {
-            throw new RuntimeException("'AppId' is null or 'AppSecret' is null.");
-        }
         // 从拓扑网络中获取token
         TokenReference token = getTokenByTopology();
         if (token != null) {

@@ -20,6 +20,10 @@ import com.suisrc.jaxrsapi.core.token.Token;
 public class SimpleTokenActivator extends AccessTokenActivator {
     
     private TokenProduce tokenProduce;
+    
+    private String appId;
+    
+    private String appSecret;
 
     /**
      * 该类只有在代理生成所用，运行时无用
@@ -30,13 +34,15 @@ public class SimpleTokenActivator extends AccessTokenActivator {
     }
 
     @Override
-    protected String getAppIdKey() {
-        return "com.suisrc.activators.simple.appId";
+    public String getAppName() {
+        return "Simple";
     }
-
+    
     @Override
-    protected String getAppSecretKey() {
-        return "com.suisrc.activators.simple.appSecret";
+    public void postConstruct() {
+        appId = System.getProperty("com.suisrc.activators.simple.appId");
+        appSecret = System.getProperty("com.suisrc.activators.simple.appSecret");
+        super.postConstruct();
     }
 
     @Override
@@ -50,7 +56,7 @@ public class SimpleTokenActivator extends AccessTokenActivator {
         if (tokenProduce == null) {
             ScCDI.injectWithNamed(0, SimpleTokenActivator.class, v -> tokenProduce == null, v -> tokenProduce = v, TokenProduce.class);
         }
-        return tokenProduce.getToken(getAppId(), getAppSecret());
+        return tokenProduce.getToken(appId, appSecret);
     }
 
 }

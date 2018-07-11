@@ -25,7 +25,7 @@ import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-07-10T14:05:49.459
+ *   2018-07-10T19:49:16.498
  * <author>
  *   Y13
  */

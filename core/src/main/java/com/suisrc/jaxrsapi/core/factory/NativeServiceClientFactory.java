@@ -70,8 +70,14 @@ public class NativeServiceClientFactory {
      * 
      * @param clazzes
      */
-    public static void build(Class<? extends ApiActivator>... clazzes) {
-        
+    public static void build(ApiActivator... activators) {
+        if (!clientImpls.isEmpty()) {
+            clientImpls.clear();// 清空原有系统数据
+        } 
+        for (ApiActivator activator : activators) {
+            activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
+            activator.postConstruct();
+        }
     }
 
     /**
@@ -116,13 +122,21 @@ public class NativeServiceClientFactory {
             }
         }
     }
-
     /**
      * 构建实体远程访问代理对象
      * 
      * @param clazzes
      */
     public static void buildFile(String target, String classKey, Class<? extends ApiActivator>... clazzes) {
+        buildFile(target, classKey, true, clazzes);
+    }
+
+    /**
+     * 构建实体远程访问代理对象
+     * 
+     * @param clazzes
+     */
+    public static void buildFile(String target, String classKey, boolean init, Class<? extends ApiActivator>... clazzes) {
         if (!clientImpls.isEmpty()) {
             clientImpls.clear();// 清空原有系统数据
         } 
@@ -134,7 +148,9 @@ public class NativeServiceClientFactory {
             ApiActivator activator = (ApiActivator) activatorObj;
             // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
             activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
-            activator.postConstruct(); // 初始化
+            if (init) {
+                activator.postConstruct(); // 初始化
+            }
             try {// 创建远程接口实现
                 ClientServiceFactory.createImpl(activator, index, target, classKey);
             } catch (Exception e) {
@@ -212,4 +228,14 @@ public class NativeServiceClientFactory {
         return indexer.complete();
     }
 
+    /**
+     * 构建调用代码
+     * @param args
+     */
+    public static void buildSources(String name, Class<? extends ApiActivator> activator) {
+        String path = ClassLoader.getSystemResource("").getPath();
+        path = path.substring(1, path.length() - "target/test-classes/".length()) + "src/main/java";
+        NSCF.buildFile(path, name, false, activator);
+        System.out.println("Build Completed!");
+    }
 }

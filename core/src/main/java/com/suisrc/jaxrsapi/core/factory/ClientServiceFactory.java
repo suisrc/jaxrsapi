@@ -56,7 +56,7 @@ import com.suisrc.core.ScCDI;
 import com.suisrc.core.exception.NoSupportException;
 import com.suisrc.core.jdejst.JdeJst;
 import com.suisrc.jaxrsapi.core.ApiActivator;
-import com.suisrc.jaxrsapi.core.Consts;
+import com.suisrc.jaxrsapi.core.JaxrsapiConsts;
 import com.suisrc.jaxrsapi.core.ServiceClient;
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
 import com.suisrc.jaxrsapi.core.annotation.NonProxy;
@@ -92,7 +92,7 @@ public class ClientServiceFactory {
     /**
      * 单接口多服务器模式
      */
-    static boolean MULIT_MODE = Boolean.getBoolean(Consts.KEY_REMOTE_API_NULTI_MODE);
+    static boolean MULIT_MODE = Boolean.getBoolean(JaxrsapiConsts.KEY_REMOTE_API_NULTI_MODE);
 
     /**
      * 全局偏移量
@@ -116,6 +116,7 @@ public class ClientServiceFactory {
         createClassInfo(activator, jjc, classInfo);
         for (MethodInfo methodInfo : classInfo.methods()) {
             if (isProxyMethod(methodInfo)) {
+                jjc._import(methodInfo.returnType().name().toString()); // 导入返回值类型
                 createMethodInfo(activator, index, jjc, methodInfo);
             }
         }
@@ -170,13 +171,15 @@ public class ClientServiceFactory {
         
         JBlock body = methodDef.body();
         // -----------------------------------------------------------------------------------ZERO 参数获取部分
-        // 获取方法上的注解（这些注解标记在方法的参数上）， 获取参数的顺序为 ThreadValue -> Value -> DefaultValue， 具有左边有限性
+        // 获取方法上的注解（这些注解标记在方法的参数上）
         List<AnnotationInstance> annos_m = method.annotations();
         // 分类
         List<AnnotationInstance> value_ms = new ArrayList<>();
         List<AnnotationInstance> defaultValue_ms = new ArrayList<>();
-        Map<Short, AnnotationInstance> TfDefaultValue_ms = new HashMap<>();
+        Map<Short, AnnotationInstance> tfDefaultValue_ms = new HashMap<>();
         List<AnnotationInstance> reviser_ms = new ArrayList<>();
+        // 对应的重写赋值内容 
+        List<Consumer<JBlock>> retryValue_lst = new ArrayList<>();
         
         for (AnnotationInstance anno : annos_m) {
             if (anno.target().kind() != Kind.METHOD_PARAMETER) {
@@ -184,23 +187,27 @@ public class ClientServiceFactory {
             }
             String annoName = anno.name().toString();
             if (annoName.equals(Value.class.getName())) {
+                // Value
                 value_ms.add(anno);
             } else if (annoName.equals(DefaultValue.class.getName())) {
+                // DefaultValue
                 defaultValue_ms.add(anno);
             } else if (annoName.equals(TfDefaultValue.class.getName())) {
+                // TfDefaultValue
                 short position = anno.target().asMethodParameter().position();
-                TfDefaultValue_ms.put(position, anno);
+                tfDefaultValue_ms.put(position, anno);
             } else if (annoName.equals(Reviser.class.getName())) {
+                // Reviser
                 reviser_ms.add(anno);
             } else if (annoName.equals(NonProxy.class.getName())) {
+                // NonProxy
                 AnnotationValue ave = anno.value();
                 Boolean stauts = ave == null ? true : activator.getAdapter(ave.asString());
                 if (stauts != null && stauts) {
                     // 不再记性下面的内容构建，相当于禁用了该接口
                     jjc._import(NoSupportException.class);
                     JCall jcall = JTypes.typeOf(NoSupportException.class)._new();
-                    jcall.arg(JExprs.str("The interface has been disabled, Config:[" 
-                            + (ave == null ? "Permanently Disabled" : ave.asString()) + "]"));
+                    jcall.arg(JExprs.str("The interface has been disabled, Config:[" + (ave == null ? "Permanently Disabled" : ave.asString()) + "]"));
                     body._throw(jcall);
                     return;
                 }
@@ -213,14 +220,20 @@ public class ClientServiceFactory {
             short position = anno.target().asMethodParameter().position();
             JParamDeclaration param = params.get(position);
             methodExpr.arg(param.type().field("class"));
-            //--------
-            createParamValueInfo(jjm, body, params, anno, methodExpr);
+            //-----
+            AnnotationValue retryValue = anno.value("retry");
+            if (retryValue != null && retryValue.asBoolean()) {
+                AnnotationValue reoverValue = anno.value("reover");
+                boolean reover = reoverValue != null ? reoverValue.asBoolean() : true;
+                retryValue_lst.add(block -> createParamValueInfo(jjm, block, params, anno, methodExpr, reover));
+            }
+            createParamValueInfo(jjm, body, params, anno, methodExpr, false);
         }
         // -----------------------------------------------------------------------------------ZERO parameter DefaultValue参数获取部分
         for (AnnotationInstance anno : defaultValue_ms) { // DefaultValue
             short position = anno.target().asMethodParameter().position();
-            JCall methodExpr = getDefaultValueMethodExpr(jjm, anno, TfDefaultValue_ms.get(position), parameters.get(position));
-            createParamValueInfo(jjm, body, params, anno, methodExpr);
+            JCall methodExpr = getDefaultValueMethodExpr(jjm, anno, tfDefaultValue_ms.get(position), parameters.get(position));
+            createParamValueInfo(jjm, body, params, anno, methodExpr, false);
         }
         // -----------------------------------------------------------------------------------ZERO field 参数获取部分
         // 参数内部的属性
@@ -234,13 +247,21 @@ public class ClientServiceFactory {
             // -----------------------------------------------------------------------------------ZERO field ThreadValue参数获取部分
             List<AnnotationInstance> annos_f = classInfo.annotations().get(DotName.createSimple(Value.class.getName()));
             if (annos_f != null && !annos_f.isEmpty()) {
-                for (AnnotationInstance anno : annos_f) { // SystemValue
+                for (AnnotationInstance anno : annos_f) { // Value
                     JCall methodExpr = getValueMethodExpr(jjm, anno);
                     FieldInfo fieldInfo = anno.target().asField();
                     String type = fieldInfo.type().name().toString();
                     jjc._import(type);
                     methodExpr.arg(JTypes.typeNamed(type).field("class"));
-                    createFieldValueInfo(jjm, body, params.get(i), anno, methodExpr);
+                    JParamDeclaration param = params.get(i);
+                    //-----
+                    AnnotationValue retryValue = anno.value("retry");
+                    if (retryValue != null && retryValue.asBoolean()) {
+                        AnnotationValue reoverValue = anno.value("reover");
+                        boolean reover = reoverValue != null ? reoverValue.asBoolean() : true;
+                        retryValue_lst.add(block -> createFieldValueInfo(jjm, block, param, anno, methodExpr, reover));
+                    }
+                    createFieldValueInfo(jjm, body, param, anno, methodExpr, false);
                 }
             }
             // -----------------------------------------------------------------------------------ZERO field DefaultValue参数获取部分
@@ -256,26 +277,26 @@ public class ClientServiceFactory {
                         }
                     }
                     JCall methodExpr = getDefaultValueMethodExpr(jjm, anno, tfAnno, fieldInfo.type());
-                    createFieldValueInfo(jjm, body, params.get(i), anno, methodExpr);
+                    createFieldValueInfo(jjm, body, params.get(i), anno, methodExpr, false);
                 }
             }
             // -------------------------------------------------------------------------------ZERO 最后的数据修正拦截
             annos_f = classInfo.annotations().get(DotName.createSimple(Reviser.class.getName()));
             if (annos_f != null && !annos_f.isEmpty()) {
-                for (AnnotationInstance anno : annos_f) { // InterceptParam
+                for (AnnotationInstance anno : annos_f) { // reviser
                     JCall methodExpr = getReviserMethodExpr(jjm, anno);
                     createFieldReviserInfo(jjm, body, params.get(i), anno, methodExpr);
                 }
             }
         }
         // -------------------------------------------------------------------------------最后的数据修正拦截
-        for (AnnotationInstance anno : reviser_ms) { // InterceptParam
+        for (AnnotationInstance anno : reviser_ms) { // reviser
             JCall methodExpr = getReviserMethodExpr(jjm, anno);
             short position = anno.target().asMethodParameter().position();
             createParamReviserInfo(jjm, body, params.get(position), anno, methodExpr);
         }
         // -------------------------------------------------------------------------------ZERO 返回值处理
-        createReturnInfo(jjm, body, method, params);
+        createReturnInfo(jjm, body, method, params, retryValue_lst);
         // -------------------------------------------------------------------------------ZERO 异常处理
         if (method.exceptions() != null && !method.exceptions().isEmpty()) {
             for (Type type : method.exceptions()) {
@@ -295,7 +316,7 @@ public class ClientServiceFactory {
         // Reviser.class
         String clazz = anno.value().asClass().name().toString();
         AnnotationValue ave = anno.value("master");
-        String master = ave == null ? Consts.NONE : ave.asString();
+        String master = ave == null ? JaxrsapiConsts.NONE : ave.asString();
         // 构建代码
         jjm.getJJClass()._import(clazz);
         JCall reviseHandler = JTypes.typeNamed(clazz)._new();
@@ -372,7 +393,7 @@ public class ClientServiceFactory {
     private JCall getValueMethodExpr(JJMethod jjm, AnnotationInstance anno) {
         // String actname = ServiceClient.MED_getActivator; // 获取activator方法
         // Value.class
-        String actname = Consts.FIELD_ACTIVATOR; // 获取activator属性
+        String actname = JaxrsapiConsts.FIELD_ACTIVATOR; // 获取activator属性
         String metname = ServiceClient.MED_getAdapter;
         String value = anno.value().asString();
         // 赋值方法
@@ -389,18 +410,22 @@ public class ClientServiceFactory {
      * @param anno
      * @param methodExpr
      */
-    private void createParamValueInfo(JJMethod jjm, JBlock body, List<JParamDeclaration> params, AnnotationInstance anno, JCall methodExpr) {
+    private void createParamValueInfo(JJMethod jjm, JBlock body, List<JParamDeclaration> params, AnnotationInstance anno, JCall methodExpr, boolean override) {
         short position = anno.target().asMethodParameter().position();
         JParamDeclaration param = params.get(position);
         // 获取参数
         JAssignableExpr paramVar = JExprs.$v(param);
-        // 判断参数是否为空
-        JIf jif = body._if(paramVar.eq(JExpr.NULL));
-        // 对参数进行赋值
-        JVarDeclaration temp = jif.var(0, param.type(), "temp", methodExpr.cast(param.type()));
-        JAssignableExpr tempVar = JExprs.$v(temp);
-        JIf jif2 = jif._if(tempVar.ne(JExpr.NULL));
-        jif2.assign(paramVar, JExprs.$v(temp));
+        if (override) {
+            body.assign(paramVar, methodExpr);
+        } else {
+            // 判断参数是否为空
+            JIf jif = body._if(paramVar.eq(JExpr.NULL));
+            // 对参数进行赋值
+            JVarDeclaration temp = jif.var(0, param.type(), "temp", methodExpr.cast(param.type()));
+            JAssignableExpr tempVar = JExprs.$v(temp);
+            JIf jif2 = jif._if(tempVar.ne(JExpr.NULL));
+            jif2.assign(paramVar, JExprs.$v(temp));
+        }
     }
 
     /**
@@ -409,8 +434,9 @@ public class ClientServiceFactory {
      * @param param
      * @param anno
      * @param methodExpr
+     * @param override 是否强制覆盖
      */
-    private void createFieldValueInfo(JJMethod jjm, JBlock body, JParamDeclaration param, AnnotationInstance anno, JCall methodExpr) {
+    private void createFieldValueInfo(JJMethod jjm, JBlock body, JParamDeclaration param, AnnotationInstance anno, JCall methodExpr, boolean override) {
         FieldInfo fieldInfo = anno.target().asField();
         String name = fieldInfo.name();
         name = name.substring(0, 1).toUpperCase() + name.substring(1);
@@ -423,21 +449,29 @@ public class ClientServiceFactory {
         JAssignableExpr paramVar = JExprs.$v(param);
         JCall paramGet = paramVar.call(getMethod);
         JCall paramSet = paramVar.call(setMethod);
-        JIf jif = body._if(paramGet.eq(JExpr.NULL));
-        JVarDeclaration temp = jif.var(0, type, "temp", methodExpr.cast(type));
-        JAssignableExpr tempVar = JExprs.$v(temp);
-        paramSet.arg(tempVar);
-        JIf jif2 = jif._if(tempVar.ne(JExpr.NULL));
-        jif2.add(paramSet);
+        
+        if (override) {
+            paramSet.arg(methodExpr);
+            body.add(paramSet);
+        } else {
+            JIf jif = body._if(paramGet.eq(JExpr.NULL));
+            JVarDeclaration temp = jif.var(0, type, "temp", methodExpr.cast(type));
+            JAssignableExpr tempVar = JExprs.$v(temp);
+            paramSet.arg(tempVar);
+            JIf jif2 = jif._if(tempVar.ne(JExpr.NULL));
+            jif2.add(paramSet);
+        }
     }
 
     /**
      * 构建返回值内容
+     * @param jjm
+     * @param body
      * @param method
-     * @param anno
-     * @return
+     * @param params
+     * @param retrylst
      */
-    private void createReturnInfo(JJMethod jjm, JBlock body, MethodInfo method, List<JParamDeclaration> params) {
+    private void createReturnInfo(JJMethod jjm, JBlock body, MethodInfo method, List<JParamDeclaration> params, List<Consumer<JBlock>> retrylst) {
         // 本地代理请求注解
         AnnotationInstance anno = method.annotation(DotName.createSimple(LocalProxy.class.getName()));
         // 数据请求方法
@@ -454,7 +488,7 @@ public class ClientServiceFactory {
         }
         // 对于请求的内容，是否支持重试
         anno = method.annotation(DotName.createSimple(Retry.class.getName()));
-        JExpr result = anno == null ? methodExpr.cast(method.returnType().name().toString()) : getRetryExpr(jjm, body, method, methodExpr, anno);
+        JExpr result = anno == null ? methodExpr.cast(method.returnType().name().toString()) : getRetryExpr(jjm, body, method, methodExpr, anno, retrylst);
         // 设定返回值
         body._return(result);
     }
@@ -464,8 +498,8 @@ public class ClientServiceFactory {
      * 
      *  RetryPredicateImpl predicate = new RetryPredicateImpl();
      *  int count = 2;
-     *  String result = null;
-     *  Exception exception = null;
+     *  String result;
+     *  Exception exception;
      *  do {
      *      result = null;
      *      exception = null;
@@ -479,11 +513,11 @@ public class ClientServiceFactory {
      *  
      * 没有给参数，参数这里无法给出
      */
-    private JExpr getRetryExpr(JJMethod jjm, JBlock body, MethodInfo method, JCall jcm, AnnotationInstance anno) {
+    private JExpr getRetryExpr(JJMethod jjm, JBlock body, MethodInfo method, JCall jcm, AnnotationInstance anno, List<Consumer<JBlock>> retrylst) {
         // Retry.class
         String clazz = anno.value().asClass().name().toString(); // 类型
         AnnotationValue ave = anno.value("master"); // 初始化构造时候，使用的构造参数
-        String master = ave == null ? Consts.NONE : ave.asString();
+        String master = ave == null ? JaxrsapiConsts.NONE : ave.asString();
         ave = anno.value("count");
         int count = ave == null ? 2 : ave.asInt();
         // 构建代码
@@ -494,10 +528,13 @@ public class ClientServiceFactory {
             testNew.arg(JExprs.$v(master));
         }
         jjm.getJJClass()._import(Exception.class);
+        
+        JExpr countHex = JExprs.hex(count);
+        
         JVarDeclaration predicateVar = body.var(0, testType, "predicate", testNew);
-        JVarDeclaration countVar = body.var(0, JType.INT, "count", JExprs.hex(count));
-        JVarDeclaration resultVar = body.var(0, JTypes.typeNamed(method.returnType().name().toString()), "result", JExpr.NULL);
-        JVarDeclaration exceptionVar = body.var(0, JTypes.typeOf(Exception.class), "exception", JExpr.NULL);
+        JVarDeclaration countVar = body.var(0, JType.INT, "count", countHex);
+        JVarDeclaration resultVar = body.var(0, JTypes.typeNamed(method.returnType().name().toString()), "result");
+        JVarDeclaration exceptionVar = body.var(0, JTypes.typeOf(Exception.class), "exception");
 
         JAssignableExpr predicateExpr = JExprs.$v(predicateVar);
         JAssignableExpr countExpr = JExprs.$v(countVar);
@@ -505,7 +542,7 @@ public class ClientServiceFactory {
         JAssignableExpr exceptionExpr = JExprs.$v(exceptionVar);
         
         JCall testCall = predicateExpr.call(RetryPredicate.METHOD);
-        testCall.arg(JExprs.hex(count));
+        testCall.arg(countHex);
         testCall.arg(countExpr.preDec());
         testCall.arg(resultExpr);
         testCall.arg(exceptionExpr);
@@ -514,6 +551,10 @@ public class ClientServiceFactory {
         doBlock.assign(resultExpr, JExpr.NULL);
         doBlock.assign(exceptionExpr, JExpr.NULL);
         JTry doTry = doBlock._try();
+        if (!retrylst.isEmpty()) {
+            JIf jif = doTry._if(countExpr.ne(countHex));
+            retrylst.forEach(c -> c.accept(jif));
+        }
         doTry.assign(resultExpr, jcm);
         JCatch doCatch = doTry._catch(0, Exception.class, " e"); // 此处与bug, 必须是“ e”, 否则生成的代码有问题
         doCatch.assign(exceptionExpr, JExprs.$v("e"));
@@ -535,7 +576,7 @@ public class ClientServiceFactory {
             
             jjm.getJJClass()._import(WebTarget.class);
             jjm.getJJClass()._import(ProxyBuilder.class);
-            JCall targetCall = JExprs.$v(Consts.FIELD_ACTIVATOR).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
+            JCall targetCall = JExprs.$v(JaxrsapiConsts.FIELD_ACTIVATOR).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
             JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
             JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
             proxyExpr.arg(JTypes.typeNamed(proxyType).field("class"));
@@ -545,7 +586,7 @@ public class ClientServiceFactory {
             JAssignableExpr proxy = JExprs.$v(body.var(0, proxyType, "proxy", buildExpr));
             methodExpr = proxy.call(method.name());
         } else {
-            methodExpr = JExprs.$v(Consts.FIELD_PROXY).call(method.name());
+            methodExpr = JExprs.$v(JaxrsapiConsts.FIELD_PROXY).call(method.name());
         }
         return methodExpr;
     }
@@ -560,7 +601,7 @@ public class ClientServiceFactory {
     private JCall createLocalProxyReturnInfo(JJMethod jjm, MethodInfo method, AnnotationInstance anno) {
         String className = anno.value().asClass().name().toString(); // 代理的类型
         AnnotationValue annoValue = anno.value("master");
-        String construct = annoValue == null ? Consts.NONE : annoValue.asString();
+        String construct = annoValue == null ? JaxrsapiConsts.NONE : annoValue.asString();
         annoValue = anno.value("method");
         String methodName = annoValue == null ? LocalProxy.defaultMethod : annoValue.asString();
         // 赋值
@@ -570,7 +611,7 @@ public class ClientServiceFactory {
             proxy.arg(JExprs.$v(construct));
         }
         JCall methodExpr = proxy.call(methodName);
-         JCall baseUrl = JExprs.$v(Consts.FIELD_ACTIVATOR).call("getBaseUrl");
+         JCall baseUrl = JExprs.$v(JaxrsapiConsts.FIELD_ACTIVATOR).call("getBaseUrl");
          JExpr path = baseUrl;
          if (jjm.getJJClass().getRootPath() != null) {
              path = path.plus(JExprs.str("/" + jjm.getJJClass().getRootPath()));
@@ -636,7 +677,7 @@ public class ClientServiceFactory {
             jjc.setMulitMode(true);
             jjc._import(Named.class);
             anno = jjc.annotate(Named.class);
-            jjc.annotateValue(anno, "value", named.value() + Consts.separator + classInfo.name().toString());
+            jjc.annotateValue(anno, "value", named.value() + JaxrsapiConsts.separator + classInfo.name().toString());
         }
         // 继承的接口
         jjc._import(api);
@@ -649,12 +690,12 @@ public class ClientServiceFactory {
         JVarDeclaration proxyField = null;
         if (!jjc.isOneTimeProxy()) {
             // 远程访问控制器
-            JJField pf = jjc.field(JMod.PRIVATE, api, Consts.FIELD_PROXY);
+            JJField pf = jjc.field(JMod.PRIVATE, api, JaxrsapiConsts.FIELD_PROXY);
             proxyField = pf.getJVarDeclaration();
             proxyField.blockComment().text("远程代理访问客户端控制器");
         }
         jjc._import(ApiActivator.class);
-        JJField af = jjc.field(JMod.PRIVATE, ApiActivator.class, Consts.FIELD_ACTIVATOR);
+        JJField af = jjc.field(JMod.PRIVATE, ApiActivator.class, JaxrsapiConsts.FIELD_ACTIVATOR);
         JVarDeclaration activatorField = af.getJVarDeclaration();
         activatorField.blockComment().text("远程服务器控制器，具有服务器信息");
 
