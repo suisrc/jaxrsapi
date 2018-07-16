@@ -18,12 +18,12 @@ public interface ApiActivator {
     /**
      * 构造方法执行过程中到初始化
      */
-    default void initConstruct() {};
+    default void doInitConstruct() {};
     
     /**
      * 构造方法结束后到初始化
      */
-    default void postConstruct() {};
+    default void doPostConstruct() {};
 
     /**
      * 获取基础路径地址
@@ -111,7 +111,7 @@ public interface ApiActivator {
      * @param key
      * @param value
      */
-    default <T> void setAdapter(String key, T value) {}
+    default void setAdapter(String key, Object value) {}
 
     /**
      * 设定适配器对象

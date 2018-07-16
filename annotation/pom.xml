@@ -5,13 +5,17 @@
     <parent>
         <groupId>com.suisrc.jaxrsapi</groupId>
         <artifactId>jaxrsapi-parent</artifactId>
-        <version>1.0.4-Final</version>
+        <version>1.0.5-Final</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>jaxrsapi-annotation</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+        </dependency>
     </dependencies>
     <name>${project.groupId}:${project.artifactId}</name>
 </project>

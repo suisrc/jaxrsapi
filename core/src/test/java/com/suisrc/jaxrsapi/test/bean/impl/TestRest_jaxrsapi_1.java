@@ -25,7 +25,7 @@ import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-07-10T19:49:16.498
+ *   2018-07-16T11:05:04.588
  * <author>
  *   Y13
  */
@@ -105,8 +105,8 @@ public class TestRest_jaxrsapi_1 implements TestRest, ServiceClient {
         pm0.setName((new TReviseHandler()).accept(pm0.getName()));
         RetryPredicateImpl predicate = new RetryPredicateImpl(activator);
         int count = 0x10;
-        String result = null;
-        Exception exception = null;
+        String result;
+        Exception exception;
         do {
             result = null;
             exception = null;

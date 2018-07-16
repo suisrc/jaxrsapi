@@ -658,9 +658,14 @@ public class ClientServiceFactory {
      */
     private void createClassInfo(ApiActivator activator, JJClass jjc, ClassInfo classInfo)
             throws NotFoundException, ClassNotFoundException, CannotCompileException {
-        Named named = activator.getClass().getAnnotation(Named.class);
-        if (named == null) {
-            throw new RuntimeException("Not found 'Named' annotation: " + activator.getClass());
+        String activatorName = null;
+        { // 获取激活器的名字
+            Named named = activator.getClass().getAnnotation(Named.class);
+            if (named == null) {
+                    throw new RuntimeException("Not found 'Named' annotation: " + activator.getClass());
+            } else {
+                activatorName = named.value();
+            }
         }
         String api = classInfo.name().toString();
         // 注释说明
@@ -677,7 +682,7 @@ public class ClientServiceFactory {
             jjc.setMulitMode(true);
             jjc._import(Named.class);
             anno = jjc.annotate(Named.class);
-            jjc.annotateValue(anno, "value", named.value() + JaxrsapiConsts.separator + classInfo.name().toString());
+            jjc.annotateValue(anno, "value", activatorName + JaxrsapiConsts.separator + classInfo.name().toString());
         }
         // 继承的接口
         jjc._import(api);
@@ -740,7 +745,7 @@ public class ClientServiceFactory {
         jjc._import(Named.class);
         JJMethod am = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_setActivator);
         anno = am.annotate(Named.class);
-        am.annotateValue(anno, "value", named.value());
+        am.annotateValue(anno, "value", activatorName);
         JMethodDef activatorMethod = am.getJMethodDef();
         activatorMethod.docComment().text("配置远程服务器控制器");
         JBlock activatorBody = activatorMethod.body();

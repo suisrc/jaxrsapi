@@ -2,7 +2,6 @@ package com.suisrc.jaxrsapi.core;
 
 import java.util.concurrent.ExecutorService;
 
-import javax.inject.Named;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -11,9 +10,7 @@ import org.jboss.resteasy.client.jaxrs.ClientBuilderFactory;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
-import com.suisrc.core.ScCDI;
-import com.suisrc.core.ScKey;
-import com.suisrc.core.exec.ScExecutor;
+import com.suisrc.core.Global;
 import com.suisrc.jaxrsapi.core.filter.MonitorRequestFilter;
 
 /**
@@ -55,7 +52,7 @@ public abstract class AbstractActivator implements ApiActivator {
      * 构造方法
      */
     protected AbstractActivator() {
-        initConstruct();
+        doInitConstruct();
     }
     
     // ----------------------------------------------------------------ZERO 通用接口属性索引
@@ -64,13 +61,12 @@ public abstract class AbstractActivator implements ApiActivator {
      * 构建访问线程池, 默认不使用私有线程池
      * executor = Executors.newFixedThreadPool(10);
      */
-    @Named(ScKey.NAMED_APPLICATION)
     protected ExecutorService createExecutorService() {
 //        RefOne<ExecutorService> ref = new RefOne<>();
 //        ScCDI.injectWithNamed(0, null, null, ref::set, Exception::printStackTrace, ScExecutor.class);
 //        // ref.get 可能为空，但是为空到时候，会输出注入时候发生到空异常
 //        return ref.get();
-        return ScCDI.injectWithNamed(ScExecutor.class);
+        return Global.getScExecutor();
     }
 
     /**
@@ -115,9 +111,16 @@ public abstract class AbstractActivator implements ApiActivator {
     }
 
     /**
+     * 构造方法调用
+     */
+    public void doInitConstruct() {
+    }
+    
+    /**
      * 构造后被系统调用 进行内容初始化
      */
-    public void postConstruct() {
+    @Override
+    public void doPostConstruct() {
         proxyHost = createProxyHost();
         proxyPort = createProxyPort();
         // 执行获取执行到线程池
@@ -131,6 +134,7 @@ public abstract class AbstractActivator implements ApiActivator {
     /**
      * 获取系统的对象
      */
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T getAdapter(Class<T> type) {
         if (type == WebTarget.class) {
@@ -146,6 +150,7 @@ public abstract class AbstractActivator implements ApiActivator {
     /**
      * 主要是为了防止不支持javaee7.0标准的反向内容注入
      */
+    @Override
     public <T> void setAdapter(Class<T> type, T value) {
         if (type == ResteasyProviderFactory.class) {
             providerFactory = (ResteasyProviderFactory) value;

@@ -43,9 +43,10 @@ public abstract class AccessTokenActivator extends AbstractActivator {
     /**
      * 构造后被系统调用 进行内容初始化
      */
-    public void postConstruct() {
+    @Override
+    public void doPostConstruct() {
         baseUrl = System.getProperty(getBaseUrlKey());
-        super.postConstruct();
+        super.doPostConstruct();
         token = initToken();
     }
     
@@ -130,6 +131,7 @@ public abstract class AccessTokenActivator extends AbstractActivator {
     /**
      * 获取系统中常用的数据配置 返回系统中常量数据
      */
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T getAdapter(String key) {
         if (key.equals(getTokenKey())) {
@@ -142,7 +144,8 @@ public abstract class AccessTokenActivator extends AbstractActivator {
     }
 
     //--------------------------------------------------ZERO Config
-    
+
+    @Override
     public String getBaseUrl() {
         return baseUrl;
     }

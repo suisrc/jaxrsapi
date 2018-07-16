@@ -76,7 +76,7 @@ public class NativeServiceClientFactory {
         } 
         for (ApiActivator activator : activators) {
             activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
-            activator.postConstruct();
+            activator.doPostConstruct();
         }
     }
 
@@ -97,7 +97,7 @@ public class NativeServiceClientFactory {
             ApiActivator activator = (ApiActivator) activatorObj;
             // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
             activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
-            activator.postConstruct(); // 初始化
+            activator.doPostConstruct(); // 初始化
             try {// 创建远程接口实现
                 ClientServiceFactory.createImpl(activator, index, (api, impl) -> {
                     try {
@@ -149,7 +149,7 @@ public class NativeServiceClientFactory {
             // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
             activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
             if (init) {
-                activator.postConstruct(); // 初始化
+                activator.doPostConstruct(); // 初始化
             }
             try {// 创建远程接口实现
                 ClientServiceFactory.createImpl(activator, index, target, classKey);
