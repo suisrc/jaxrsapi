@@ -202,7 +202,7 @@ public class ClientServiceFactory {
             } else if (annoName.equals(NonProxy.class.getName())) {
                 // NonProxy
                 AnnotationValue ave = anno.value();
-                Boolean stauts = ave == null ? true : activator.getAdapter(ave.asString());
+                Boolean stauts = ave == null ? true : activator.getAdapter(ave.asString(), Boolean.class);
                 if (stauts != null && stauts) {
                     // 不再记性下面的内容构建，相当于禁用了该接口
                     jjc._import(NoSupportException.class);
@@ -576,7 +576,9 @@ public class ClientServiceFactory {
             
             jjm.getJJClass()._import(WebTarget.class);
             jjm.getJJClass()._import(ProxyBuilder.class);
-            JCall targetCall = JExprs.$v(JaxrsapiConsts.FIELD_ACTIVATOR).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
+            JCall targetCall = JExprs.$v(JaxrsapiConsts.FIELD_ACTIVATOR).call(ServiceClient.MED_getAdapter);
+            targetCall.arg(JExpr.NULL.cast(String.class));
+            targetCall.arg(JTypes.typeOf(WebTarget.class).field("class"));
             JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
             JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
             proxyExpr.arg(JTypes.typeNamed(proxyType).field("class"));
@@ -716,7 +718,9 @@ public class ClientServiceFactory {
             //anno = initializeMethod.annotate(PostConstruct.class);
             jjc._import(WebTarget.class);
             jjc._import(ProxyBuilder.class);
-            JCall targetCall = JExprs.$v(activatorField).call("getAdapter").arg(JTypes.typeOf(WebTarget.class).field("class"));
+            JCall targetCall = JExprs.$v(activatorField).call(ServiceClient.MED_getAdapter);
+            targetCall.arg(JExpr.NULL.cast(String.class));
+            targetCall.arg(JTypes.typeOf(WebTarget.class).field("class"));
             JExpr targetJExpr = targetCall.cast(WebTarget.class);
             // 0180205 增加对@RemoteApi的使用
             List<AnnotationInstance> annoIs = classInfo.annotations().get(DotName.createSimple(RemoteApi.class.getName()));

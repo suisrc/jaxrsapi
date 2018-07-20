@@ -36,12 +36,31 @@ public class TestServerActivator implements ApiActivator {
     
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T getAdapter(String key) {
+    public <T> T getAdapter(String key, Class<T> type) {
         if (key.equals("false")) {
             return (T)Boolean.FALSE;
         } else if (key.equals("true")) {
             return (T)Boolean.TRUE;
         }
-        return ApiActivator.super.getAdapter(key);
+        if (key.equals("T-NAME")) {
+            return (T) "XX";
+        }
+        if (key.equals("T-XX")) {
+            return (T) "hello, world";
+        }
+        if (key.equals("XXX")) {
+            return (T) "T-XX";
+        }
+        return ApiActivator.super.getAdapter(key, type);
+    }
+    
+    public static void main(String[] args) {
+        TestServerActivator tsa = new TestServerActivator();
+        String value = tsa.getAdapter("T-{T-NAME}", String.class);
+        System.out.println(value);
+        value = tsa.getAdapter("T-XX", String.class);
+        System.out.println(value);
+        value = tsa.getAdapter("{XXX}", String.class);
+        System.out.println(value);
     }
 }

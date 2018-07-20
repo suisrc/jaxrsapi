@@ -56,53 +56,64 @@ public interface ApiActivator {
             throw new RuntimeException(getClass().getCanonicalName() + " not transform to " + clazz.getCanonicalName());
         }
     }
-
-    /**
-     * 通过适配器获取数据
-     * 
-     * @param key
-     * @return
-     */
-    default <T> T getAdapter(String key) {
-        return getAdapter(key, (Class<T>) null);
-    }
     
     /**
      * 带有类型的返回
-     * @param key
-     * @param type
-     * @return
-     */
-    default <T> T getAdapter(String key, Class<T> type) {
-        if (key == null) {
-            return null;
-        }
-        T value = null;
-        if (key.indexOf(JaxrsapiConsts.PRE_SPLIT) < 0) {
-            // 使用默认变量环境
-            if (JaxrsapiConsts.PRE_DEFAULT != null) {
-                value = Global.getValue(JaxrsapiConsts.PRE_DEFAULT + key, type);
-            }
-        } else {
-            // 直接查询
-            value = Global.getValue(key, type);
-        }
-        return value;
-    }
-
-    /**
-     * 通过适配器获取对象
-     * 
+     * @param named
      * @param type
      * @return
      */
     @SuppressWarnings("unchecked")
-    default <T> T getAdapter(Class<T> type) {
+    default <T> T getAdapter(String named, Class<T> type) {
         if (type == WebTarget.class) {
             // 客户端默认新建，为了达到最优访问速度， 最好不使用默认，重写该方法
             return (T) ClientBuilder.newClient().target(getBaseUrl());
         }
-        return null;
+        if (named == null) {
+            return null;
+        }
+        T value = null;
+        if (named.length() > 2 && named.indexOf('{') >= 0) {
+            // 带有附加变量的查询方式
+            StringBuilder keysbir = new StringBuilder();
+            int offset = 0;
+            int start = named.indexOf('{');
+            while (start >= offset) {
+                if (offset < start) {
+                    keysbir.append(named.substring(offset, start));
+                }
+                int end = named.indexOf('}', start);
+                if (end < 0) {
+                    return null; // 无法处理
+                }
+                String keykey = named.substring(start + 1, end);
+                if (keykey.isEmpty()) {
+                    return null; // 无法处理
+                }
+                // 警告：这里有递归，本身递归就要危险性
+                String keyvalue = getAdapter(keykey, String.class);
+                if (keyvalue == null) {
+                    return null; // 无法处理
+                }
+                keysbir.append(keyvalue);
+                offset = end + 1;
+                start = named.indexOf('{', offset);
+            }
+            if (offset < named.length() - 1) {
+                // 把结尾的内容增加进去
+                keysbir.append(named.substring(offset));
+            }
+            value = getAdapter(keysbir.toString(), type);
+        } else if (named.indexOf(JaxrsapiConsts.PRE_SPLIT) < 0) {
+            // 使用默认变量环境
+            if (JaxrsapiConsts.PRE_DEFAULT != null) {
+                value = Global.getValue(JaxrsapiConsts.PRE_DEFAULT + named, type);
+            }
+        } else {
+            // 直接查询
+            value = Global.getValue(named, type);
+        }
+        return value;
     }
 
     /**
@@ -111,14 +122,6 @@ public interface ApiActivator {
      * @param key
      * @param value
      */
-    default void setAdapter(String key, Object value) {}
-
-    /**
-     * 设定适配器对象
-     * 
-     * @param type
-     * @param value
-     */
-    default <T> void setAdapter(Class<T> type, T value) {}
+    default <T> void setAdapter(String named, Class<T> type, T value) {}
 
 }

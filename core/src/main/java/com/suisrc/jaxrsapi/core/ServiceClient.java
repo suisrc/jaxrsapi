@@ -44,19 +44,12 @@ public interface ServiceClient {
      * @param key
      * @return
      */
-    default <T> T getAdapter(String key) {
-        return getActivator().getAdapter(key);
-    }
-
-    /**
-     * 通过适配器获取数据
-     * 
-     * @param type
-     * @return
-     */
     @SuppressWarnings("unchecked")
-    default <T> T getAdapter(Class<T> type) {
-        return type == ApiActivator.class ? (T) getActivator() : getActivator().getAdapter(type);
+    default <T> T getAdapter(String key, Class<T> type) {
+        if (type == ApiActivator.class) {
+            return (T) getActivator();
+        }
+        return getActivator().getAdapter(key, type);
     }
 
 }

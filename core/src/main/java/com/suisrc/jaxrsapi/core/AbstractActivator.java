@@ -136,7 +136,7 @@ public abstract class AbstractActivator implements ApiActivator {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getAdapter(Class<T> type) {
+    public <T> T getAdapter(String named, Class<T> type) {
         if (type == WebTarget.class) {
             return (T) client.target(getBaseUrl());
         } else if (type == Client.class) {
@@ -144,16 +144,17 @@ public abstract class AbstractActivator implements ApiActivator {
         } else if (type == ResteasyProviderFactory.class) {
             return (T) providerFactory;
         }
-        return null;
+        return ApiActivator.super.getAdapter(named, type);
     }
 
     /**
      * 主要是为了防止不支持javaee7.0标准的反向内容注入
      */
     @Override
-    public <T> void setAdapter(Class<T> type, T value) {
+    public <T> void setAdapter(String named, Class<T> type, T value) {
         if (type == ResteasyProviderFactory.class) {
             providerFactory = (ResteasyProviderFactory) value;
+            return;
         }
     }
     

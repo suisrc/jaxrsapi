@@ -75,7 +75,7 @@ public class NativeServiceClientFactory {
             clientImpls.clear();// 清空原有系统数据
         } 
         for (ApiActivator activator : activators) {
-            activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
+            activator.setAdapter((String)null, ResteasyProviderFactory.class, getNativeProviderFactory());
             activator.doPostConstruct();
         }
     }
@@ -96,7 +96,7 @@ public class NativeServiceClientFactory {
         for (Object activatorObj : clientImpls.values().toArray()) {
             ApiActivator activator = (ApiActivator) activatorObj;
             // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
-            activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
+            activator.setAdapter((String)null, ResteasyProviderFactory.class, getNativeProviderFactory());
             activator.doPostConstruct(); // 初始化
             try {// 创建远程接口实现
                 ClientServiceFactory.createImpl(activator, index, (api, impl) -> {
@@ -147,7 +147,7 @@ public class NativeServiceClientFactory {
         for (Object activatorObj : clientImpls.values().toArray()) {
             ApiActivator activator = (ApiActivator) activatorObj;
             // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
-            activator.setAdapter(ResteasyProviderFactory.class, getNativeProviderFactory());
+            activator.setAdapter((String)null, ResteasyProviderFactory.class, getNativeProviderFactory());
             if (init) {
                 activator.doPostConstruct(); // 初始化
             }

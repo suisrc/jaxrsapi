@@ -25,7 +25,7 @@ import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-07-16T11:05:04.588
+ *   2018-07-19T11:49:43.224
  * <author>
  *   Y13
  */
@@ -43,7 +43,7 @@ public class TestRest_jaxrsapi_1 implements TestRest, ServiceClient {
      * 初始化
      */
     public void postConstruct() {
-        WebTarget target = ((WebTarget)activator.getAdapter(WebTarget.class)).path("test");
+        WebTarget target = ((WebTarget)activator.getAdapter((String)null, WebTarget.class)).path("test");
         proxy = ProxyBuilder.builder(TestRest.class, target).build();
     }
     /**
