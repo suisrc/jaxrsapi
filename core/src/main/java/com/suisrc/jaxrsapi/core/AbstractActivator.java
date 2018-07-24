@@ -1,7 +1,10 @@
 package com.suisrc.jaxrsapi.core;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import javax.inject.Named;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -11,6 +14,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
 import com.suisrc.core.Global;
+import com.suisrc.core.ScCDI;
 import com.suisrc.jaxrsapi.core.filter.MonitorRequestFilter;
 
 /**
@@ -22,7 +26,7 @@ public abstract class AbstractActivator implements ApiActivator {
     /**
      * 调试标记
      */
-    protected static final boolean DEBUG = Boolean.getBoolean(JaxrsapiConsts.DEBUG);
+    protected static final boolean DEBUG = Boolean.getBoolean(JaxrsConsts.DEBUG);
 
     /**
      * 提供器工厂，序列化和反序列化对象
@@ -47,6 +51,11 @@ public abstract class AbstractActivator implements ApiActivator {
      * 访问默认代理端口
      */
     protected int proxyPort = -1;
+    
+    /**
+     * 接口实现索引
+     */
+    private Map<Class<?>, Object> apiImplMap = null;
 
     /**
      * 构造方法
@@ -192,4 +201,86 @@ public abstract class AbstractActivator implements ApiActivator {
         return -1;
     }
     
+    // ----------------------------------------------------------------接口注册
+    
+    /**
+     * 获取API索引实现内容
+     * @return
+     */
+    protected Map<Class<?>, Object> getApiImplMap() {
+        if (apiImplMap == null) {
+            apiImplMap = new HashMap<>();
+        }
+        return apiImplMap;
+    }
+    
+    /**
+     * 注册接口
+     */
+    @Override
+    public void registerApi(String named, Class<?> api, Object value) {
+        if (named == JaxrsConsts.RESTFUL_API_IMPL && value != null && api.isAssignableFrom(value.getClass())) {
+            Map<Class<?>, Object> cache = getApiImplMap();
+            if (cache != null) {
+                cache.put(api, value);
+            }
+        }
+    }
+    
+    /**
+     * 获取接口实现
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T getApiImplement(Class<T> apiType) {
+        Map<Class<?>, Object> cache = getApiImplMap();
+        if (cache != null) {
+            return (T) cache.get(apiType);
+        }
+        return null;
+    }
+    
+    /**
+     * 使用索引+注入的方式实现
+     * @param apiType
+     * @return
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected <T> T getApiImplement2(Class<T> apiType) {
+        Map<Class<?>, Object> cache = getApiImplMap();
+        if (cache == null) {
+            return null;
+        }
+        if (cache.isEmpty()) {
+            // 集合为空，使用全局索引查询加载
+            synchronized (cache) {
+                if (cache.isEmpty()) {
+                    String name = getClass().getCanonicalName() + "Index";
+                    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+                    try {
+                        Class indexClass = loader.loadClass(name);
+                        ApiActivatorIndex indexObject = (ApiActivatorIndex) indexClass.newInstance();
+                        cache.putAll(indexObject.getApiImpl());
+                    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                        System.err.println(e.getClass() + ":" + e.getMessage());
+                    }
+                }
+            }
+        }
+        Object value = cache.get(apiType);
+        if (value == null) {
+            return null;
+        }
+        if (apiType.isAssignableFrom(value.getClass())) {
+            // 该内容被注册过，有限使用注册的内容
+            return (T) value;
+        }
+        if (!(value instanceof Class)) {
+            return null;
+        }
+        Class<?> impClass = (Class) value;
+        Named named = impClass.getAnnotation(Named.class);
+        // 通过注入获取需要调用的内容
+        return named == null ? ScCDI.getInjectBean(apiType) : ScCDI.getInjectBean(apiType, named);
+    }
 }

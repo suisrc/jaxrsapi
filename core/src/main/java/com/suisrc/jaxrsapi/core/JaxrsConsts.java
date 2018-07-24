@@ -9,12 +9,17 @@ import com.suisrc.core.ScConsts;
  * @author Y13
  *
  */
-public interface JaxrsapiConsts {
+public interface JaxrsConsts {
     
     /**
      * debug
      */
     final String DEBUG = "com.suisrc.jaxrsapi.debug"; //$NON-NLS-N$
+    
+    /**
+     * 接口api
+     */
+    final String RESTFUL_API_IMPL = "restful-api-impl"; //$NON-NLS-N$
 
     /**
      * 空字符串
@@ -30,7 +35,7 @@ public interface JaxrsapiConsts {
      * 
      * 默认到构造集合
      */
-    final String PRE_DEFAULT = Global.getValue(System::getProperty, JaxrsapiConsts.KEY_VALUE_PREFIX_DEFAULT, 
+    final String PRE_DEFAULT = Global.getValue(System::getProperty, JaxrsConsts.KEY_VALUE_PREFIX_DEFAULT, 
             null, // 没有默认值
             ScConsts.PRE_GLOBAL, // 全局
             ScConsts.PRE_THREAD, // 线程
@@ -62,13 +67,6 @@ public interface JaxrsapiConsts {
     final String separator = "/"; //$NON-NLS-N$
 
     // ------------------------------------------KEY--------------------------------//
-    /**
-     * 远程API在系统中运行的模式，如果是单远程模式，只需要使用简单的@Inject即可， 如果同时访问多个远程服务器，需要在使用注入的使用通过@Named进行分离
-     * 这里所谓的多个，是同一个restful接口对应多个服务器的情况 如果不愿意使用@Named,可以使用拷贝多份restful接口解决这个问题。这个使用 系统应该运行与单模式
-     * 
-     * 多模式：同一个restful接口对应多台远程服务器
-     */
-    final String KEY_REMOTE_API_NULTI_MODE = "com.suisrc.remote-api.runtime.multi-mode"; //$NON-NLS-N$
 
     /**
      * 默认的变量容器 该配置内容只能是 E: S: G: T: 其中情况，其他无效

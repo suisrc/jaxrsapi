@@ -25,12 +25,12 @@ import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-07-19T11:49:43.224
+ *   2018-07-24T16:22:45.576
  * <author>
  *   Y13
  */
 @ApplicationScoped
-public class TestRest_jaxrsapi_1 implements TestRest, ServiceClient {
+public class TestRest_jaxrsapi implements TestRest, ServiceClient {
     /*
      * 远程代理访问客户端控制器
      */
@@ -64,7 +64,7 @@ public class TestRest_jaxrsapi_1 implements TestRest, ServiceClient {
     /**
      * 构造方法
      */
-    public TestRest_jaxrsapi_1() {
+    public TestRest_jaxrsapi() {
         setActivator();
     }
     /**

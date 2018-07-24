@@ -44,6 +44,14 @@ public interface ApiActivator {
     default boolean isStdInject() {
         return false;
     }
+    
+    /**
+     * 多模态模式, 当一个即可被多个激活器时候时候，该返回值应该为true
+     * @return
+     */
+    default boolean isMulitMode() {
+        return false;
+    }
 
     /**
      * 把自己强制转换为其他类型
@@ -104,10 +112,10 @@ public interface ApiActivator {
                 keysbir.append(named.substring(offset));
             }
             value = getAdapter(keysbir.toString(), type);
-        } else if (named.indexOf(JaxrsapiConsts.PRE_SPLIT) < 0) {
+        } else if (named.indexOf(JaxrsConsts.PRE_SPLIT) < 0) {
             // 使用默认变量环境
-            if (JaxrsapiConsts.PRE_DEFAULT != null) {
-                value = Global.getValue(JaxrsapiConsts.PRE_DEFAULT + named, type);
+            if (JaxrsConsts.PRE_DEFAULT != null) {
+                value = Global.getValue(JaxrsConsts.PRE_DEFAULT + named, type);
             }
         } else {
             // 直接查询
@@ -123,5 +131,28 @@ public interface ApiActivator {
      * @param value
      */
     default <T> void setAdapter(String named, Class<T> type, T value) {}
+    
+    /**
+     * 对接口进行注册
+     * 
+     * 注册的内容可以是接口的实现对象，也可以是接口的实现类型
+     * 
+     * @param named
+     * @param api
+     * @param value
+     */
+    default void registerApi(String named, Class<?> api, Object value) {}
+    
+    /**
+     * 获取接口的实现对象
+     * 
+     * 如果接口没有跟该激活器绑定，则，返回为null
+     * @param apiType
+     * @return
+     */
+    default <T> T getApiImplement(Class<T> apiType) {
+        return null;
+    }
+
 
 }
