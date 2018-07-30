@@ -56,9 +56,9 @@ import org.jboss.jdeparser.JType;
 import org.jboss.jdeparser.JTypes;
 import org.jboss.jdeparser.JVarDeclaration;
 
-import com.suisrc.core.ScCDI;
 import com.suisrc.core.exception.NoSupportException;
 import com.suisrc.core.jdejst.JdeJst;
+import com.suisrc.core.utils.CdiUtils;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.ApiActivatorIndex;
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
@@ -759,8 +759,8 @@ public class ClientServiceFactory {
             activatorVar = JExprs.$v(param);
         } else {
             // 非标准接口时候，通过构造方法对该内容记性注入调用
-            jjc._import(ScCDI.class);
-            JCall cdiExpr = JExprs.callStatic(ScCDI.class, ScCDI.MED_INJECT_WITH_NAMED);
+            jjc._import(CdiUtils.class);
+            JCall cdiExpr = JExprs.callStatic(CdiUtils.class, CdiUtils.MED_DEF_QUALIFIER);
             cdiExpr.arg(activatorField.type().field("class"));
             activatorVar = cdiExpr;
             // 需要在构造方法中调用ServiceClient.MED_setActivator方法
@@ -911,7 +911,7 @@ public class ClientServiceFactory {
             if (isCreateActivatorIndex) {
                 Map<Object, JJClass> classMap = jj.getClassMap();
                 // 构建激活器的索引
-                String name = activator.getClass().getSimpleName() + "Index";
+                String name = activator.getClass().getSimpleName() + JaxrsConsts.ACTIVATOR_INDEX_SUFFIX;
                 String pkgName = activator.getClass().getPackage().getName();
                 JJClass jjc = jj.createClass(ApiActivatorIndex.class, name, pkgName);
                 // 强制修改包位置为激活器位置相同

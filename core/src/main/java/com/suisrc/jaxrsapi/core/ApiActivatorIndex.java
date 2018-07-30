@@ -5,6 +5,8 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.suisrc.core.Global;
+
 public interface ApiActivatorIndex {
     
     /**
@@ -42,7 +44,7 @@ public interface ApiActivatorIndex {
                     fields.put(name, clazz);
                 }
             } catch (IllegalArgumentException | IllegalAccessException e) {
-                System.out.println(e.getClass() + ":" + e.getMessage());
+                Global.getLogger().warning(e.getClass() + ":" + e.getMessage());
             }
         }
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -58,7 +60,7 @@ public interface ApiActivatorIndex {
                         Class impClass = loader.loadClass(implValue);
                         apiImpls.put(apiClass, impClass);
                     } catch (ClassNotFoundException e) {
-                        System.out.println(e.getClass() + ":" + e.getMessage());
+                        Global.getLogger().warning(e.getClass() + ":" + e.getMessage());
                     }
                 }
             }

@@ -10,6 +10,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
+import com.suisrc.core.Global;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.ServiceClient;
@@ -142,6 +143,6 @@ public class NativeServiceClientFactory {
         String path = ClassLoader.getSystemResource("").getPath();
         path = path.substring(1, path.length() - "target/test-classes/".length()) + "src/main/java";
         buildFile(path, name, false, activator);
-        System.out.println("Build Completed!");
+        Global.getLogger().info("Build Completed!");
     }
 }

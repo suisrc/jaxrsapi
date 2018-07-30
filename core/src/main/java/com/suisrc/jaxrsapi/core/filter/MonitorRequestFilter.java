@@ -1,6 +1,7 @@
 package com.suisrc.jaxrsapi.core.filter;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -15,6 +16,7 @@ import com.suisrc.jaxrsapi.core.ApiActivator;
  *
  */
 public class MonitorRequestFilter implements ClientRequestFilter {
+    private static final Logger logger = Logger.getLogger(MonitorRequestFilter.class.getName());
     
     /**
      * 服务器激活器
@@ -51,7 +53,7 @@ public class MonitorRequestFilter implements ClientRequestFilter {
      * @param string
      */
     protected void printRequestInfo(String info) {
-        System.out.println(info);
+        logger.info(info);
     }
 
 }

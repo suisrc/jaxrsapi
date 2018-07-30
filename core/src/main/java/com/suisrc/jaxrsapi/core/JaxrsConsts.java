@@ -66,6 +66,13 @@ public interface JaxrsConsts {
      */
     final String separator = "/"; //$NON-NLS-N$
 
+    // ----------------------------index class suffix----------------------------------//
+    
+    /**
+     * 索引文件后缀
+     */
+    final String ACTIVATOR_INDEX_SUFFIX = "Index";
+
     // ------------------------------------------KEY--------------------------------//
 
     /**

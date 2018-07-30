@@ -3,6 +3,7 @@ package com.suisrc.jaxrsapi.core;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.logging.Logger;
 
 import javax.inject.Named;
 import javax.ws.rs.client.Client;
@@ -14,7 +15,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
 import com.suisrc.core.Global;
-import com.suisrc.core.ScCDI;
+import com.suisrc.core.utils.CdiUtils;
 import com.suisrc.jaxrsapi.core.filter.MonitorRequestFilter;
 
 /**
@@ -23,6 +24,8 @@ import com.suisrc.jaxrsapi.core.filter.MonitorRequestFilter;
  * @author Y13
  */
 public abstract class AbstractActivator implements ApiActivator {
+    protected static final Logger logger = Logger.getLogger(ApiActivator.class.getName());
+    
     /**
      * 调试标记
      */
@@ -255,14 +258,14 @@ public abstract class AbstractActivator implements ApiActivator {
             // 集合为空，使用全局索引查询加载
             synchronized (cache) {
                 if (cache.isEmpty()) {
-                    String name = getClass().getCanonicalName() + "Index";
+                    String name = getClass().getCanonicalName() + JaxrsConsts.ACTIVATOR_INDEX_SUFFIX;
                     ClassLoader loader = Thread.currentThread().getContextClassLoader();
                     try {
                         Class indexClass = loader.loadClass(name);
                         ApiActivatorIndex indexObject = (ApiActivatorIndex) indexClass.newInstance();
                         cache.putAll(indexObject.getApiImpl());
                     } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                        System.err.println(e.getClass() + ":" + e.getMessage());
+                        logger.warning(e.getClass() + ":" + e.getMessage());
                     }
                 }
             }
@@ -281,6 +284,6 @@ public abstract class AbstractActivator implements ApiActivator {
         Class<?> impClass = (Class) value;
         Named named = impClass.getAnnotation(Named.class);
         // 通过注入获取需要调用的内容
-        return named == null ? ScCDI.getInjectBean(apiType) : ScCDI.getInjectBean(apiType, named);
+        return named == null ? CdiUtils.select(apiType) : CdiUtils.select(apiType, named);
     }
 }

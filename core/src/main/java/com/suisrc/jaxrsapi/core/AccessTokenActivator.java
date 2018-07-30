@@ -335,7 +335,7 @@ public abstract class AccessTokenActivator extends AbstractActivator {
                                 restartUpdateTokenScheduler(tokenAtom.getTokenKey());
                                 // 等待更新服务启动完成
                                 tokenAtom.getTokenScheduler().awaitRunning();
-                                System.out.println(tokenAtom.getTokenKey() + "令牌更新服务异常，已经重启令牌更新服务。");
+                                logger.warning(tokenAtom.getTokenKey() + "令牌更新服务异常，已经重启令牌更新服务。");
                             }
                         }
                         // 进程休眠1s,防止线程间恶意竞争
@@ -345,7 +345,7 @@ public abstract class AccessTokenActivator extends AbstractActivator {
                         if (tokenAtom.getTokenScheduler() == null || !tokenAtom.getTokenScheduler().isRunning()) {
                             // 更新服务异常，并没有在运行， 重启服务
                             restartUpdateTokenScheduler(tokenAtom.getTokenKey());
-                            System.out.println(tokenAtom.getTokenKey() + "令牌更新服务异常，已经通知重启。");
+                            logger.warning(tokenAtom.getTokenKey() + "令牌更新服务异常，已经通知重启。");
                         }
                     case VALID:
                         check = false; // 检查通过，token可用使用
