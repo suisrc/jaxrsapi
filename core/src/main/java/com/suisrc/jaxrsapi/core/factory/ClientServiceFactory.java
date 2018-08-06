@@ -15,8 +15,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -61,6 +61,9 @@ import com.suisrc.core.jdejst.JdeJst;
 import com.suisrc.core.utils.CdiUtils;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.ApiActivatorIndex;
+import com.suisrc.jaxrsapi.core.ApiActivatorInfo;
+//import com.suisrc.jaxrsapi.core.ApiActivatorInfo;
+import com.suisrc.jaxrsapi.core.ApiActivatorProxy;
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.ServiceClient;
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
@@ -103,12 +106,12 @@ public class ClientServiceFactory {
      * @return
      * @throws Exception
      */
-    private void createImpl(ApiActivator activator, IndexView index, JJClass jjc, ClassInfo classInfo) throws Exception {
-        createClassInfo(activator, jjc, classInfo);
+    private void createImpl(ApiActivatorInfo aaInfo, IndexView index, JJClass jjc, ClassInfo classInfo) throws Exception {
+        createClassInfo(aaInfo, jjc, classInfo);
         for (MethodInfo methodInfo : classInfo.methods()) {
             if (isProxyMethod(methodInfo)) {
                 jjc._import(methodInfo.returnType().name().toString()); // 导入返回值类型
-                createMethodInfo(activator, index, jjc, methodInfo);
+                createMethodInfo(aaInfo, index, jjc, methodInfo);
             }
         }
     }
@@ -140,7 +143,7 @@ public class ClientServiceFactory {
      * @throws NotFoundException
      * @throws ClassNotFoundException
      */
-    private void createMethodInfo(ApiActivator activator, IndexView index, JJClass jjc, MethodInfo method)
+    private void createMethodInfo(ApiActivatorInfo aaInfo, IndexView index, JJClass jjc, MethodInfo method)
             throws CannotCompileException, ClassNotFoundException, NotFoundException {
         // 创建方法
         JJMethod jjm = jjc.method(JMod.PUBLIC, method.returnType().name().toString(), method.name());
@@ -178,7 +181,7 @@ public class ClientServiceFactory {
             if (annoName.equals(NonProxy.class.getName())) {
                 // NonProxy
                 AnnotationValue ave = anno.value();
-                Boolean stauts = ave == null ? true : activator.getAdapter(ave.asString(), Boolean.class);
+                Boolean stauts = ave == null ? true : aaInfo.getAdapter(ave.asString(), Boolean.class);
                 if (stauts != null && stauts) {
                     // 不再记性下面的内容构建，相当于禁用了该接口
                     jjc._import(NoSupportException.class);
@@ -655,17 +658,9 @@ public class ClientServiceFactory {
      * @throws ClassNotFoundException
      * @throws CannotCompileException
      */
-    private void createClassInfo(ApiActivator activator, JJClass jjc, ClassInfo classInfo)
+    private void createClassInfo(ApiActivatorInfo aaInfo, JJClass jjc, ClassInfo classInfo)
             throws NotFoundException, ClassNotFoundException, CannotCompileException {
-        String activatorName = null;
-        { // 获取激活器的名字
-            Named named = activator.getClass().getAnnotation(Named.class);
-            if (named == null) {
-                    throw new RuntimeException("Not found 'Named' annotation: " + activator.getClass());
-            } else {
-                activatorName = named.value();
-            }
-        }
+        String activatorName = aaInfo.getActivatorName();
         String api = classInfo.name().toString();
         // 注释说明
         JDocComment comment = jjc.getJClassDef().docComment();
@@ -677,7 +672,7 @@ public class ClientServiceFactory {
         // 实现代理的注解
         jjc._import(ApplicationScoped.class);
         JAnnotation anno = jjc.annotate(ApplicationScoped.class);
-        if (activator.isMulitMode()) { // 单接口多服务器模式
+        if (aaInfo.isMulitMode()) { // 单接口多服务器模式
             jjc.setMulitMode(true);
             jjc._import(Named.class);
             anno = jjc.annotate(Named.class);
@@ -743,20 +738,31 @@ public class ClientServiceFactory {
         // 激活器的get和set方法
         jjc.getter(af, ServiceClient.MED_getActivator, "获取远程服务器控制器");
         // jjc.setter(af, ServiceClient.MED_setActivator, "配置远程服务器控制器");
-        jjc._import(Named.class);
         JJMethod am = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_setActivator);
-        anno = am.annotate(Named.class);
-        am.annotateValue(anno, "value", activatorName);
         JMethodDef activatorMethod = am.getJMethodDef();
         activatorMethod.docComment().text("配置远程服务器控制器");
+
+        jjc._import(Named.class);
+        anno = am.annotate(Named.class);
+        am.annotateValue(anno, "value", activatorName);
+
         JBlock activatorBody = activatorMethod.body();
         JExpr activatorVar;
-        if (activator.isStdInject()) {
+        if (aaInfo.isStdInject()) {
             // 标准JAVA注入接口
-            jjc._import(Inject.class);
-            anno = am.annotate(Inject.class);
-            JParamDeclaration param = activatorMethod.param(activatorField.type(), "pm");
-            activatorVar = JExprs.$v(param);
+            // jjc._import(Inject.class);
+            // anno = am.annotate(Inject.class);
+            // JParamDeclaration param = activatorMethod.param(activatorField.type(), "pm");
+            // anno = param.annotate(Named.class);
+            // param.annotateValue(anno, "value", activatorName);
+            // activatorVar = JExprs.$v(param);
+            // 暂时不支持在参数上加注解 20180802
+            jjc._import(PostConstruct.class);
+            anno = am.annotate(PostConstruct.class);
+            jjc._import(CdiUtils.class);
+            JCall cdiExpr = JExprs.callStatic(CdiUtils.class, CdiUtils.MED_DEF_QUALIFIER);
+            cdiExpr.arg(activatorField.type().field("class"));
+            activatorVar = cdiExpr;
         } else {
             // 非标准接口时候，通过构造方法对该内容记性注入调用
             jjc._import(CdiUtils.class);
@@ -782,7 +788,7 @@ public class ClientServiceFactory {
      * @param map
      */
     @SuppressWarnings("rawtypes")
-    private void createActivatorIndex(ApiActivator activator, JJClass jjc, Map<Object, JJClass> apiMap) {
+    private void createActivatorIndex(ApiActivatorInfo aaInfo, JJClass jjc, Map<Object, JJClass> apiMap) {
         String api = ApiActivatorIndex.class.getCanonicalName();
         // 注释说明
         JDocComment comment = jjc.getJClassDef().docComment();
@@ -795,8 +801,7 @@ public class ClientServiceFactory {
         jjc._import(api);
         jjc._implements(api);
         
-        Named namedAnno = activator.getClass().getAnnotation(Named.class);
-        String namedStr = namedAnno.value();
+        String namedStr = aaInfo.getActivatorName();
         
         for (Entry<Object, JJClass> entry : apiMap.entrySet()) {
             if (!(entry.getKey() instanceof Class)) {
@@ -846,8 +851,29 @@ public class ClientServiceFactory {
             }
             // 有的时候，该内容是被临时使用的，没有任何意义
             ApiActivator activator = (ApiActivator) classActivator.newInstance();
-            ClientServiceFactory.createImpl(activator, index, acceptThen, key, cai);
+            createImpl(activator, index, acceptThen, key, cai);
         }
+    }
+
+    /**
+     * 处理递归创建
+     * @param index
+     * @param acceptThen
+     * @param key
+     * @param cai
+     * @throws Exception
+     */
+    public static void processIndex(ApiActivatorInfo aaInfo, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen,
+            String key, boolean cai, String targetFile) throws Exception {
+        JdeJst jjst = new JdeJst();
+        if (targetFile != null) {
+            jjst.setShowSrc(true);
+            jjst.setTarget(new File(targetFile));
+        }
+        createImpl(aaInfo, index, jjst, jj -> {
+            Map<Object, CtClass> ctClasses = jj.writeSource();
+            ctClasses.entrySet().forEach(v -> acceptThen.accept((Class<?>) v.getKey(), v.getValue()));
+        }, key != null ? key : "$$jaxrsapi", cai);
     }
     
     /**
@@ -860,7 +886,7 @@ public class ClientServiceFactory {
      * @throws Exception
      */
     static void createImpl(ApiActivator activator, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen, String key, boolean cai) throws Exception {
-        createImpl(activator, index, new JdeJst(), jj -> {
+        createImpl(new ApiActivatorProxy(activator), index, new JdeJst(), jj -> {
             Map<Object, CtClass> ctClasses = jj.writeSource();
             ctClasses.entrySet().forEach(v -> acceptThen.accept((Class<?>)v.getKey(), v.getValue()));
         }, key != null ? key : "$$jaxrsapi", cai);
@@ -879,7 +905,7 @@ public class ClientServiceFactory {
         JdeJst jjst = new JdeJst();
         jjst.setTarget(new File(targetFile));
         jjst.setShowSrc(true); // 需要输出文件
-        createImpl(activator, index, jjst, jj -> jj.writeSource4File(), key != null ? key : "_jaxrsapi", cai);
+        createImpl(new ApiActivatorProxy(activator), index, jjst, jj -> jj.writeSource4File(), key != null ? key : "_jaxrsapi", cai);
     }
 
     /**
@@ -888,7 +914,7 @@ public class ClientServiceFactory {
      * 
      * 主要接口，其他createImpl都会汇集到该接口中。
      * 
-     * @param activator
+     * @param aaInfo
      * @param index
      * @param jj
      * @param accpetThen
@@ -896,26 +922,26 @@ public class ClientServiceFactory {
      * @param isCreateActivatorIndex 是否构建激活器的索引
      * @throws Exception
      */
-    static void createImpl(ApiActivator activator, IndexView index, JdeJst jj, Consumer<JdeJst> accpetThen, 
+    public static void createImpl(ApiActivatorInfo aaInfo, IndexView index, JdeJst jj, Consumer<JdeJst> accpetThen, 
             String key, boolean isCreateActivatorIndex) throws Exception {
         ClientServiceFactory factory = new ClientServiceFactory();
         try {
             
-            for (Class<?> apiClass : activator.getClasses()) {
+            for (Class<?> apiClass : aaInfo.getClasses()) {
                 ClassInfo info = index.getClassByName(DotName.createSimple(apiClass.getName()));
                 // 生成api代理实体
                 String name = apiClass.getCanonicalName() + key;
                 JJClass jjc = jj.createClass(apiClass, name);
-                factory.createImpl(activator, index, jjc, info);
+                factory.createImpl(aaInfo, index, jjc, info);
             }
             if (isCreateActivatorIndex) {
                 Map<Object, JJClass> classMap = jj.getClassMap();
                 // 构建激活器的索引
-                String name = activator.getClass().getSimpleName() + JaxrsConsts.ACTIVATOR_INDEX_SUFFIX;
-                String pkgName = activator.getClass().getPackage().getName();
+                String name = aaInfo.getActivatorClassName() + JaxrsConsts.ACTIVATOR_INDEX_SUFFIX;
+                String pkgName = aaInfo.getActivatorPackageName();
                 JJClass jjc = jj.createClass(ApiActivatorIndex.class, name, pkgName);
                 // 强制修改包位置为激活器位置相同
-                factory.createActivatorIndex(activator, jjc, classMap);
+                factory.createActivatorIndex(aaInfo, jjc, classMap);
             }
             accpetThen.accept(jj);
         } finally {
