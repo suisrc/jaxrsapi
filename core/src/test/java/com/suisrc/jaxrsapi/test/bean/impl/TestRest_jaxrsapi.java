@@ -12,6 +12,7 @@ import com.suisrc.jaxrsapi.test.bean.RetryPredicateImpl;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.test.bean.TestBean;
 import com.suisrc.jaxrsapi.core.ServiceClient;
+import java.lang.NullPointerException;
 import com.suisrc.jaxrsapi.test.bean.TestRest;
 import javax.ws.rs.client.WebTarget;
 import com.suisrc.jaxrsapi.core.factory.Transform;
@@ -25,7 +26,7 @@ import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-08-01T17:16:43.164
+ *   2018-08-07T16:25:50.687
  * <author>
  *   Y13
  */
@@ -102,6 +103,8 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
             if (temp != null) pm0.setOther2(temp);
 
         }
+        if (pm0.getAge() == null) throw new NullPointerException("年龄为空");
+
         pm0.setName((new TReviseHandler()).accept(pm0.getName()));
         RetryPredicateImpl predicate = new RetryPredicateImpl(activator);
         int count = 0x10;
@@ -128,6 +131,8 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
             if (temp != null) pm0 = temp;
 
         }
+        if (pm0 == null) throw new NullPointerException("令牌类型为空");
+
         pm0 = (new TReviseHandler()).accept(pm0);
         return (String)(new TReviseHandler()).accept((new TLProxy()).hello(activator.getBaseUrl() + "/test" + "/cgi-bin/token", pm0));
     }

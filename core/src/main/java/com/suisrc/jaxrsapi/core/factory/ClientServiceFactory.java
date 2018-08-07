@@ -68,6 +68,7 @@ import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.ServiceClient;
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
 import com.suisrc.jaxrsapi.core.annotation.NonProxy;
+import com.suisrc.jaxrsapi.core.annotation.NotNull;
 import com.suisrc.jaxrsapi.core.annotation.OneTimeProxy;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
 import com.suisrc.jaxrsapi.core.annotation.Retry;
@@ -172,6 +173,7 @@ public class ClientServiceFactory {
         List<AnnotationInstance> defaultValue_ms = new ArrayList<>();
         Map<Short, AnnotationInstance> tfDefaultValue_ms = new HashMap<>();
         List<AnnotationInstance> reviser_ms = new ArrayList<>();
+        List<AnnotationInstance> notNull_ms = new ArrayList<>();
         AnnotationInstance reviser_m = null;
         // 对应的重写赋值内容 
         List<Consumer<JBlock>> retryValue_lst = new ArrayList<>();
@@ -211,6 +213,9 @@ public class ClientServiceFactory {
             } else if (annoName.equals(Reviser.class.getName())) {
                 // Reviser
                 reviser_ms.add(anno);
+            } else if (annoName.equals(NotNull.class.getName())) {
+                // NotNull
+                notNull_ms.add(anno);
             }
         }
         // -----------------------------------------------------------------------------------ZERO parameter Value参数获取部分
@@ -234,6 +239,10 @@ public class ClientServiceFactory {
             short position = anno.target().asMethodParameter().position();
             JCall methodExpr = getDefaultValueMethodExpr(jjm, anno, tfDefaultValue_ms.get(position), parameters.get(position));
             createParamValueInfo(jjm, body, params, anno, methodExpr, false);
+        }
+        // -----------------------------------------------------------------------------------ZERO parameter NotNull参数获取部分
+        for (AnnotationInstance anno : notNull_ms) { // NotNull
+            checkParamNotNull(jjm, body, params, anno);
         }
         // -----------------------------------------------------------------------------------ZERO field 参数获取部分
         // 参数内部的属性
@@ -278,6 +287,13 @@ public class ClientServiceFactory {
                     }
                     JCall methodExpr = getDefaultValueMethodExpr(jjm, anno, tfAnno, fieldInfo.type());
                     createFieldValueInfo(jjm, body, params.get(i), anno, methodExpr, false);
+                }
+            }
+            // -----------------------------------------------------------------------------------ZERO field NotNull参数获取部分
+            annos_f = classInfo.annotations().get(DotName.createSimple(NotNull.class.getName()));
+            if (annos_f != null && !annos_f.isEmpty()) {
+                for (AnnotationInstance anno : annos_f) { // NotNull
+                    checkFieldNotNull(jjm, body, params.get(i), anno);
                 }
             }
             // -------------------------------------------------------------------------------ZERO 最后的数据修正拦截
@@ -404,6 +420,55 @@ public class ClientServiceFactory {
     }
 
     /**
+     * 判断参数是否为空
+     * @param jjm
+     * @param body
+     * @param params
+     * @param anno
+     */
+    private void checkParamNotNull(JJMethod jjm, JBlock body, List<JParamDeclaration> params, AnnotationInstance anno) {
+        short position = anno.target().asMethodParameter().position();
+        JParamDeclaration param = params.get(position);
+        // 获取参数
+        JAssignableExpr paramVar = JExprs.$v(param);
+        // 判断参数是否为空
+        JIf jif = body._if(paramVar.eq(JExpr.NULL));
+        // 空指针异常
+        jjm.getJJClass()._import(NullPointerException.class);
+        JCall jcall = JTypes.typeOf(NullPointerException.class)._new();
+        String value = anno.value().asString();
+        jcall.arg(JExprs.str(value));
+        jif._throw(jcall);
+    }
+
+    /**
+     * 判断属性是否为空
+     * @param jjm
+     * @param body
+     * @param param
+     * @param anno
+     */
+    private void checkFieldNotNull(JJMethod jjm, JBlock body, JParamDeclaration param, AnnotationInstance anno) {
+        FieldInfo fieldInfo = anno.target().asField();
+        String name = fieldInfo.name();
+        name = name.substring(0, 1).toUpperCase() + name.substring(1);
+        String getMethod = "get" + name;
+        if (fieldInfo.declaringClass().method(getMethod) == null) {
+            getMethod = "is" + name;
+        }
+        JAssignableExpr paramVar = JExprs.$v(param);
+        JCall paramGet = paramVar.call(getMethod);
+        
+        JIf jif = body._if(paramGet.eq(JExpr.NULL));
+        // 空指针异常
+        jjm.getJJClass()._import(NullPointerException.class);
+        JCall jcall = JTypes.typeOf(NullPointerException.class)._new();
+        String value = anno.value().asString();
+        jcall.arg(JExprs.str(value));
+        jif._throw(jcall);
+    }
+
+    /**
      * 创建参数属性赋值
      * @param body
      * @param param
@@ -443,7 +508,7 @@ public class ClientServiceFactory {
         String getMethod = "get" + name;
         String setMethod = "set" + name;
         if (fieldInfo.declaringClass().method(getMethod) == null) {
-            name = "is" + name;
+            getMethod = "is" + name;
         }
         String type = fieldInfo.type().name().toString();
         JAssignableExpr paramVar = JExprs.$v(param);

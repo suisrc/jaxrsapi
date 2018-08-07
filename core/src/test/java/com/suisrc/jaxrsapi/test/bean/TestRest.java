@@ -9,6 +9,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
+import com.suisrc.jaxrsapi.core.annotation.NotNull;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
 import com.suisrc.jaxrsapi.core.annotation.Retry;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
@@ -42,5 +43,5 @@ public interface TestRest {
     @Path("cgi-bin/token")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    String getApi_5(@Reviser(TReviseHandler.class)@Value("T:grant_type") String grantType);
+    String getApi_5(@Reviser(TReviseHandler.class)@Value("T:grant_type")@NotNull("令牌类型为空") String grantType);
 }

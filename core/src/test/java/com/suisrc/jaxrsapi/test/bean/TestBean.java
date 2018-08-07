@@ -2,6 +2,7 @@ package com.suisrc.jaxrsapi.test.bean;
 
 import javax.ws.rs.DefaultValue;
 
+import com.suisrc.jaxrsapi.core.annotation.NotNull;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.TfDefaultValue;
 import com.suisrc.jaxrsapi.core.annotation.Value;
@@ -17,6 +18,7 @@ public class TestBean {
     @Value("t1")
     private String name;
 
+    @NotNull("年龄为空")
     @Value("T:t2.toString")
     private String age;
 
