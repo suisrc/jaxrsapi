@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.suisrc.core.reference.RefVol;
 import com.suisrc.core.scheduler.CustomDelayScheduler;
@@ -27,7 +25,7 @@ import com.suisrc.jaxrsapi.core.token.TokenStatus;
  * 
  * @author Y13
  */
-public abstract class AccessTokenActivator extends AbstractActivator {
+public abstract class AbstractTokenActivator extends AbstractActivator {
     
     /**
      * 一个令牌的原子类
@@ -35,7 +33,7 @@ public abstract class AccessTokenActivator extends AbstractActivator {
      * 
      * 该类不提供赋值方法,如果需要新建，可以通过getTokenAtom方法获取
      */
-    protected static class TokenAtom implements Serializable {
+    public static class TokenAtom implements Serializable {
         private static final long serialVersionUID = 2068405918828186109L;
         /**
          * token 关键字
@@ -53,6 +51,11 @@ public abstract class AccessTokenActivator extends AbstractActivator {
          * 服务是否在重启中
          */
         private RefVol<Boolean> resetScheduler = new RefVol<>(false);
+        
+        /**
+         * 禁止其他地方构造方法调用
+         */
+        protected TokenAtom() {}
         
         public String getTokenKey() {
             return tokenKey;
@@ -73,11 +76,6 @@ public abstract class AccessTokenActivator extends AbstractActivator {
      */
     protected String baseUrl;
 
-    /**
-     * token 强原子操作
-     */
-    protected ConcurrentMap<String, TokenAtom> tokenAtoms = null;
-
     // ----------------------------------------------------------------ZERO ApiActivator
     
     /**
@@ -87,7 +85,6 @@ public abstract class AccessTokenActivator extends AbstractActivator {
     public void doPostConstruct() {
         baseUrl = System.getProperty(getBaseUrlKey(), getDefaultBaseUrl());
         super.doPostConstruct();
-        tokenAtoms = new ConcurrentHashMap<>(2); // 默认使用2
     }
     
     /**
@@ -123,13 +120,30 @@ public abstract class AccessTokenActivator extends AbstractActivator {
     protected abstract Token getTokenByRemote(String tokenKey);
 
     /**
+     * 查询令牌元
+     * @param tokenKey
+     * @return
+     */
+    public abstract TokenAtom findTokenAtom(String tokenKey);
+    
+    /**
+     * 保存令牌元
+     * 
+     * 这里带有返回值，是为令牌元增加代理做扩展
+     * @param tokenKey
+     * @param tokenAtom
+     * @return
+     */
+    public abstract TokenAtom saveTokenAtom(String tokenKey, TokenAtom tokenAtom);
+
+    /**
      * 获取令牌索引
      * 
      * 令牌索引需要增加调用的应用关键字才是一个完整的令牌
      * @return
      */
     protected String getTokenKey() {
-        return "TOKEN:";
+        return "TOKEN";
     }
     
     /**
@@ -194,9 +208,6 @@ public abstract class AccessTokenActivator extends AbstractActivator {
         if (type == String.class && key.equals(getTokenKey())) {
             return (T)getToken();
         }
-        if (type == String.class && key.startsWith(getTokenKey())) {
-            return (T)getToken(key);
-        }
         return super.getAdapter(key, type);
     }
 
@@ -210,7 +221,7 @@ public abstract class AccessTokenActivator extends AbstractActivator {
     //--------------------------------------------------ZERO AccessToken
     
     /**
-     * 获取access token
+     * 获取token
      */
     public String getToken(String tokenKey) {
         TokenAtom ta = getInternalCheckToken(tokenKey);
@@ -232,15 +243,23 @@ public abstract class AccessTokenActivator extends AbstractActivator {
         }
     }
     
+    /**
+     * 
+     * @param tokenKey
+     * @param ifnew
+     * @return
+     */
     protected TokenAtom getTokenAtom(String tokenKey, boolean ifnew) {
-        TokenAtom tokenAtom = tokenAtoms.get(tokenKey);
+        TokenAtom tokenAtom = findTokenAtom(tokenKey);
         if (tokenAtom == null && ifnew) {
-            tokenAtoms.put(tokenKey, tokenAtom = new TokenAtom());
-            tokenAtom.tokenKey = tokenKey;
+            tokenAtom = saveTokenAtom(tokenKey, new TokenAtom());
+            if (tokenAtom.tokenKey == null) {
+                tokenAtom.tokenKey = tokenKey;
+            }
         }
         return tokenAtom;
     }
-    
+
     /**
      * 初始化构造AccessToken
      * 

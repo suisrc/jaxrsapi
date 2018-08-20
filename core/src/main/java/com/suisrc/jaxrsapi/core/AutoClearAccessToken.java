@@ -34,7 +34,7 @@ public abstract class AutoClearAccessToken implements RetryPredicate<Object> {
             // 最后一次反生异常，不进行处理，将异常抛出
             throw Throwables.getRuntimeException(e);
         }
-        if (!(activator instanceof AccessTokenActivator)) {
+        if (!(activator instanceof AbstractTokenActivator)) {
             // 不是令牌管理的激活器，不进行处理
             return false; //
         }
@@ -42,9 +42,9 @@ public abstract class AutoClearAccessToken implements RetryPredicate<Object> {
             // 验证为令牌过期，删除令牌后，重试
             String tokenKey = getTokenKey();
             if (tokenKey == null) {
-                ((AccessTokenActivator)activator).clearToken(isClearAutoUpdateService());
+                ((AbstractTokenActivator)activator).clearToken(isClearAutoUpdateService());
             } else {
-                ((AccessTokenActivator)activator).clearToken(tokenKey, isClearAutoUpdateService());
+                ((AbstractTokenActivator)activator).clearToken(tokenKey, isClearAutoUpdateService());
             }
             return true;
         }
