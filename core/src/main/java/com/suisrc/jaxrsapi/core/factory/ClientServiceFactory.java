@@ -59,6 +59,7 @@ import org.jboss.jdeparser.JVarDeclaration;
 import com.suisrc.core.exception.NoSupportException;
 import com.suisrc.core.jdejst.JdeJst;
 import com.suisrc.core.utils.CdiUtils;
+import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.ApiActivatorIndex;
 import com.suisrc.jaxrsapi.core.ApiActivatorInfo;
@@ -75,7 +76,6 @@ import com.suisrc.jaxrsapi.core.annotation.Retry;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.TfDefaultValue;
 import com.suisrc.jaxrsapi.core.annotation.Value;
-import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.runtime.RetryPredicate;
 import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 
@@ -649,7 +649,12 @@ public class ClientServiceFactory {
                 targetCall.arg(JExprs.str(jjm.getJJClass().getClient1Param()));
             }
             targetCall.arg(JTypes.typeOf(WebTarget.class).field("class"));
-            JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
+            // root path
+            JExpr targetJExpr = targetCall.cast(WebTarget.class);
+            if (jjm.getJJClass().getRootPath() != null) {
+                targetJExpr = targetJExpr.call("path").arg(JExprs.str(jjm.getJJClass().getRootPath()));
+            }
+            JVarDeclaration target = body.var(0, WebTarget.class, "target", targetJExpr);
             JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
             proxyExpr.arg(JTypes.typeNamed(proxyType).field("class"));
             proxyExpr.arg(JExprs.$v(target));
@@ -774,25 +779,27 @@ public class ClientServiceFactory {
         initializeMethod.docComment().text("初始化");
         // 构建实现部分
         JBlock initializeBody = initializeMethod.body();
+        
+        // 0180205 增加对@RemoteApi的使用
+        List<AnnotationInstance> annoIs = classInfo.annotations().get(DotName.createSimple(RemoteApi.class.getName()));
+        if (annoIs != null && !annoIs.isEmpty()) {
+            // 如果存在，有且仅有一个
+            AnnotationInstance ai = annoIs.get(0);
+            AnnotationValue av;
+            String rp;
+            if ((av = ai.value()) != null && !(rp = av.asString()).isEmpty()) {
+                jjc.setRootPath(rp);
+            }
+            if ((av = ai.value("client")) != null && !(rp = av.asString()).isEmpty()) {
+                // target call first param
+                jjc.setClient1Param(rp);
+            }
+        }
+        // 0180205 
         if (!jjc.isOneTimeProxy()) {
             // 0170915 PostConstruct和@Inject存在不同步情况， 更改为在ServiceClient.MED_setActivator进行初始化操作
             //jjc._import(PostConstruct.class);
             //anno = initializeMethod.annotate(PostConstruct.class);
-            // 0180205 增加对@RemoteApi的使用
-            List<AnnotationInstance> annoIs = classInfo.annotations().get(DotName.createSimple(RemoteApi.class.getName()));
-            // target call first param
-            if (annoIs != null && !annoIs.isEmpty()) {
-                // 如果存在，有且仅有一个
-                AnnotationInstance ai = annoIs.get(0);
-                AnnotationValue av;
-                String rp;
-                if ((av = ai.value()) != null && !(rp = av.asString()).isEmpty()) {
-                    jjc.setRootPath(rp);
-                }
-                if ((av = ai.value("client")) != null && !(rp = av.asString()).isEmpty()) {
-                    jjc.setClient1Param(rp);
-                }
-            }
             jjc._import(WebTarget.class);
             jjc._import(ProxyBuilder.class);
             JCall targetCall = JExprs.$v(activatorField).call(ServiceClient.MED_getAdapter);
@@ -802,6 +809,8 @@ public class ClientServiceFactory {
             } else {
                 targetCall.arg(JExprs.str(jjc.getClient1Param()));
             }
+            targetCall.arg(JTypes.typeOf(WebTarget.class).field("class"));
+            
             JExpr targetJExpr = targetCall.cast(WebTarget.class);
             if (jjc.getRootPath() != null) {
                 targetJExpr = targetJExpr.call("path").arg(JExprs.str(jjc.getRootPath()));

@@ -10,6 +10,7 @@ import javax.ws.rs.core.MediaType;
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
 import com.suisrc.jaxrsapi.core.annotation.NotNull;
+import com.suisrc.jaxrsapi.core.annotation.OneTimeProxy;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
 import com.suisrc.jaxrsapi.core.annotation.Retry;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
@@ -20,8 +21,8 @@ import com.suisrc.jaxrsapi.core.annotation.Value;
  * @author Y13
  *
  */
-@RemoteApi("test")
-//@OneTimeProxy
+@RemoteApi(value = "test", client = "123")
+@OneTimeProxy
 public interface TestRest {
 
     /**

@@ -1,4 +1,4 @@
-package com.suisrc.jaxrsapi.core.proxy;
+package com.suisrc.jaxrsapi.client.proxy;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;

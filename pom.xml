@@ -26,6 +26,7 @@
     <modules>
         <module>core</module>
         <module>annotation</module>
+        <module>client</module>
     </modules>
 
     <dependencyManagement>
@@ -48,6 +49,11 @@
             <dependency>
                 <groupId>com.suisrc.jaxrsapi</groupId>
                 <artifactId>jaxrsapi-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.suisrc.jaxrsapi</groupId>
+                <artifactId>jaxrsapi-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

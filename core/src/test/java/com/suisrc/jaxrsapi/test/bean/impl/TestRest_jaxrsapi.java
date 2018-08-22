@@ -17,7 +17,7 @@ import com.suisrc.jaxrsapi.test.bean.TestRest;
 import javax.ws.rs.client.WebTarget;
 import com.suisrc.jaxrsapi.core.factory.Transform;
 import java.lang.Override;
-import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
+import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
 
 /**
  * Follow the implementation of the restful 2.0 standard remote access agent.
@@ -26,16 +26,12 @@ import com.suisrc.jaxrsapi.core.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-08-07T16:25:50.687
+ *   2018-08-22T16:56:43.137
  * <author>
  *   Y13
  */
 @ApplicationScoped
 public class TestRest_jaxrsapi implements TestRest, ServiceClient {
-    /*
-     * 远程代理访问客户端控制器
-     */
-    private TestRest proxy;
     /*
      * 远程服务器控制器，具有服务器信息
      */
@@ -43,10 +39,7 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
     /**
      * 初始化
      */
-    public void postConstruct() {
-        WebTarget target = ((WebTarget)activator.getAdapter((String)null, WebTarget.class)).path("test");
-        proxy = ProxyBuilder.builder(TestRest.class, target).build();
-    }
+    public void postConstruct() {}
     /**
      * 获取远程服务器控制器
      */
@@ -106,6 +99,8 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
         if (pm0.getAge() == null) throw new NullPointerException("年龄为空");
 
         pm0.setName((new TReviseHandler()).accept(pm0.getName()));
+        WebTarget target = ((WebTarget)activator.getAdapter("123", WebTarget.class)).path("test");
+        TestRest proxy = ProxyBuilder.builder(TestRest.class, target).build();
         RetryPredicateImpl predicate = new RetryPredicateImpl(activator);
         int count = 0x10;
         String result;
