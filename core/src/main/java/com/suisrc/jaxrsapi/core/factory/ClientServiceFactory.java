@@ -642,7 +642,12 @@ public class ClientServiceFactory {
             jjm.getJJClass()._import(WebTarget.class);
             jjm.getJJClass()._import(ProxyBuilder.class);
             JCall targetCall = JExprs.$v(JaxrsConsts.FIELD_ACTIVATOR).call(ServiceClient.MED_getAdapter);
-            targetCall.arg(JExpr.NULL.cast(String.class));
+            // 设定第一个参数
+            if (jjm.getJJClass().getClient1Param() == null) {
+                targetCall.arg(JExpr.NULL.cast(String.class));
+            } else {
+                targetCall.arg(JExprs.str(jjm.getJJClass().getClient1Param()));
+            }
             targetCall.arg(JTypes.typeOf(WebTarget.class).field("class"));
             JVarDeclaration target = body.var(0, WebTarget.class, "target", targetCall.cast(WebTarget.class));
             JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
@@ -773,14 +778,9 @@ public class ClientServiceFactory {
             // 0170915 PostConstruct和@Inject存在不同步情况， 更改为在ServiceClient.MED_setActivator进行初始化操作
             //jjc._import(PostConstruct.class);
             //anno = initializeMethod.annotate(PostConstruct.class);
-            jjc._import(WebTarget.class);
-            jjc._import(ProxyBuilder.class);
-            JCall targetCall = JExprs.$v(activatorField).call(ServiceClient.MED_getAdapter);
-            targetCall.arg(JExpr.NULL.cast(String.class));
-            targetCall.arg(JTypes.typeOf(WebTarget.class).field("class"));
-            JExpr targetJExpr = targetCall.cast(WebTarget.class);
             // 0180205 增加对@RemoteApi的使用
             List<AnnotationInstance> annoIs = classInfo.annotations().get(DotName.createSimple(RemoteApi.class.getName()));
+            // target call first param
             if (annoIs != null && !annoIs.isEmpty()) {
                 // 如果存在，有且仅有一个
                 AnnotationInstance ai = annoIs.get(0);
@@ -788,8 +788,23 @@ public class ClientServiceFactory {
                 String rp;
                 if ((av = ai.value()) != null && !(rp = av.asString()).isEmpty()) {
                     jjc.setRootPath(rp);
-                    targetJExpr = targetJExpr.call("path").arg(JExprs.str(rp));
                 }
+                if ((av = ai.value("client")) != null && !(rp = av.asString()).isEmpty()) {
+                    jjc.setClient1Param(rp);
+                }
+            }
+            jjc._import(WebTarget.class);
+            jjc._import(ProxyBuilder.class);
+            JCall targetCall = JExprs.$v(activatorField).call(ServiceClient.MED_getAdapter);
+            // 调用参数移动到下面执行判断
+            if (jjc.getClient1Param() == null) {
+                targetCall.arg(JExpr.NULL.cast(String.class));
+            } else {
+                targetCall.arg(JExprs.str(jjc.getClient1Param()));
+            }
+            JExpr targetJExpr = targetCall.cast(WebTarget.class);
+            if (jjc.getRootPath() != null) {
+                targetJExpr = targetJExpr.call("path").arg(JExprs.str(jjc.getRootPath()));
             }
             JVarDeclaration target = initializeBody.var(0, WebTarget.class, "target", targetJExpr);
             //JVarDeclaration target = initializeBody.var(0, WebTarget.class, "target", targetCall);

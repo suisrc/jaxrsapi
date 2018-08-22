@@ -84,8 +84,8 @@ public abstract class AbstractActivator implements ApiActivator {
     /**
      * 初始化远程访问的客户端
      */
-    protected Client createTargetClient() {
-        ClientBuilder clientBuilder = createClientBuilder();// 配置网络通信内容
+    protected Client createTargetClient(String key) {
+        ClientBuilder clientBuilder = createClientBuilder(key);// 配置网络通信内容
         if (clientBuilder instanceof ResteasyClientBuilder) {
             ResteasyClientBuilder rcBuilder = (ResteasyClientBuilder) clientBuilder;
             if (proxyHost != null && proxyPort > 0) {
@@ -102,7 +102,7 @@ public abstract class AbstractActivator implements ApiActivator {
             ClientBuilderFactory.initHttpEngineThreadSaft(rcBuilder);
         } 
         Client client = clientBuilder.build();
-        registerTargetClient(client);
+        registerTargetClient(key, client);
         return client;
     }
 
@@ -110,14 +110,14 @@ public abstract class AbstractActivator implements ApiActivator {
      * 对访问器注入监听等内容
      * @param client
      */
-    protected void registerTargetClient(Client client) {
+    protected void registerTargetClient(String key, Client client) {
         client.register(new MonitorRequestFilter(this));
     }
 
     /**
      * 获取一个Client Builder
      */
-    protected ClientBuilder createClientBuilder() {
+    protected ClientBuilder createClientBuilder(String key) {
         // return ClientBuilder.newBuilder();
         return ClientBuilderFactory.newBuilder();
     }
@@ -138,7 +138,16 @@ public abstract class AbstractActivator implements ApiActivator {
         // 执行获取执行到线程池
         executor = createExecutorService();
         // 构建客户端创建器
-        client = createTargetClient();
+        client = createTargetClient(null);
+    }
+    
+    /**
+     * 获取访问的客户端
+     * @param key
+     * @return
+     */
+    protected Client getClient(String key) {
+        return client;
     }
     
     // ----------------------------------------------------------------ZERO Adapter
@@ -150,9 +159,9 @@ public abstract class AbstractActivator implements ApiActivator {
     @SuppressWarnings("unchecked")
     public <T> T getAdapter(String named, Class<T> type) {
         if (type == WebTarget.class) {
-            return (T) client.target(getBaseUrl());
+            return (T) getClient(named).target(getBaseUrl());
         } else if (type == Client.class) {
-            return (T) client;
+            return (T) getClient(named);
         } else if (type == ResteasyProviderFactory.class) {
             return (T) providerFactory;
         }
