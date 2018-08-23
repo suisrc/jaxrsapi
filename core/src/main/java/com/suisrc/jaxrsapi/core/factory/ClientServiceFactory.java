@@ -353,7 +353,7 @@ public class ClientServiceFactory {
     private void createParamReviserInfo(JJMethod jjm, JBlock body, JParamDeclaration param, AnnotationInstance anno, JCall methodExpr) {
         JAssignableExpr paramJExpr = JExprs.$v(param);
         methodExpr.arg(paramJExpr);
-        body.assign(paramJExpr, methodExpr);
+        body.assign(paramJExpr, methodExpr.cast(param.type()));
     }
 
     /**
@@ -376,7 +376,7 @@ public class ClientServiceFactory {
         JCall paramGet = paramVar.call(getMethod);
         JCall paramSet = paramVar.call(setMethod);
         methodExpr.arg(paramGet);
-        paramSet.arg(methodExpr);
+        paramSet.arg(methodExpr.cast(fieldInfo.type().name().toString()));
         body.add(paramSet);
     }
 
