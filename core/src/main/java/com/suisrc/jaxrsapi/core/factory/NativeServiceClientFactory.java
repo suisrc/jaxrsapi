@@ -68,6 +68,7 @@ public class NativeServiceClientFactory {
                             if (apiObj instanceof ServiceClient) {
                                 ServiceClient sc = (ServiceClient) apiObj;
                                 sc.setActivator(activator); // 设置激活器 执行初始化
+                                sc.postConstruct();
                             }
                             // 注册接口的实现
                             activator.registerApi(JaxrsConsts.RESTFUL_API_IMPL, (Class) api, apiObj);

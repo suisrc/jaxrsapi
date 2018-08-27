@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -97,6 +98,7 @@ import javassist.NotFoundException;
  *
  */
 public class ClientServiceFactory {
+    private static final Logger logger = Logger.getLogger(ClientServiceFactory.class.getName());
 
     /**
      * 创建接口实现
@@ -829,7 +831,7 @@ public class ClientServiceFactory {
         // jjc.setter(af, ServiceClient.MED_setActivator, "配置远程服务器控制器");
         JJMethod am = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_setActivator);
         JMethodDef activatorMethod = am.getJMethodDef();
-        activatorMethod.docComment().text("配置远程服务器控制器");
+        activatorMethod.docComment().text("自动配置远程服务器控制器");
 
         jjc._import(Named.class);
         anno = am.annotate(Named.class);
@@ -868,6 +870,16 @@ public class ClientServiceFactory {
         // 判断参数是否为空
         JIf jif = activatorBody._if(JExprs.$v(activatorField).ne(JExpr.NULL));
         jif.call(ServiceClient.MED_initialize);
+        {   // 手动更改服务器激活器 20180827
+            // ServiceClient::void setActivator(ApiActivator activator)
+            am = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_setActivator);
+            activatorMethod = am.getJMethodDef();
+            activatorMethod.docComment().text("手动更改远程服务器控制器");
+            activatorBody = activatorMethod.body();
+            JParamDeclaration param = activatorMethod.param(activatorField.type(), "pm");
+            activatorVar = JExprs.$v(param);
+            activatorBody.assign(JExprs.$v(activatorField), activatorVar);
+        }
     }
 
     /**
@@ -1015,9 +1027,24 @@ public class ClientServiceFactory {
             String key, boolean isCreateActivatorIndex) throws Exception {
         ClientServiceFactory factory = new ClientServiceFactory();
         try {
-            
+            IndexView alternativeIndex = null;
             for (Class<?> apiClass : aaInfo.getClasses()) {
-                ClassInfo info = index.getClassByName(DotName.createSimple(apiClass.getName()));
+                DotName apiDotName = DotName.createSimple(apiClass.getName());
+                ClassInfo info = index.getClassByName(apiDotName);
+                if (info == null) {
+                    if (alternativeIndex == null) {
+                        logger.info("无法从系统IndexView中查找ClassInfo, 启用备用IndexView: " + aaInfo.getActivatorName());
+                        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+                        alternativeIndex = createIndexer(loader, aaInfo);
+                        if (alternativeIndex == null) {
+                            throw new NullPointerException("无法获取备用IndexView: " + apiClass.getName());
+                        }
+                    }
+                    info = alternativeIndex.getClassByName(apiDotName);
+                    if (info == null) {
+                        throw new NullPointerException("无法从IndexView中获取ClassInfo: " + apiClass.getName());
+                    }
+                }
                 // 生成api代理实体
                 String name = apiClass.getCanonicalName() + key;
                 JJClass jjc = jj.createClass(apiClass, name);
@@ -1035,6 +1062,43 @@ public class ClientServiceFactory {
             accpetThen.accept(jj);
         } finally {
             jj.destory();// 清理
+        }
+    }
+
+
+    /**
+     * 构建Index
+     * @param result
+     * @param loader
+     * @param clazzes
+     * @return
+     */
+    public static IndexView createIndexer(ClassLoader loader, ApiActivatorInfo... infos) {
+        try {
+            Indexer indexer = new Indexer();
+            Set<Class<?>> useClasses = new HashSet<>();
+            for (ApiActivatorInfo info: infos) {
+                // 解析需要处理的接口内容
+                for (Class<?> apiClass : info.getClasses()) {
+                    useClasses.add(apiClass);
+                    for (Method method : apiClass.getMethods()) {
+                        for (Class<?> paramType : method.getParameterTypes()) {
+                            if (!paramType.isPrimitive()) {
+                                useClasses.add(paramType);
+                            }
+                        }
+                    }
+                }
+            }
+            for (Class<?> clazz : useClasses) {
+                InputStream is = loader.getResourceAsStream(clazz.getName().replace('.', '/') + ".class");
+                indexer.index(is);
+                is.close();
+            }
+            return indexer.complete();
+        } catch (Exception e) {
+            logger.warning("构建Indexer发生异常：" + e.getMessage());
+            return null;
         }
     }
 
