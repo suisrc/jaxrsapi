@@ -13,6 +13,7 @@ public interface ServiceClient {
      */
     public static final String MED_initialize = "postConstruct";
     public static final String MED_setActivator = "setActivator";
+    public static final String MED_injectActivator = "injectActivator";
     public static final String MED_getActivator = "getActivator";
     public static final String MED_getAdapter = "getAdapter";
 

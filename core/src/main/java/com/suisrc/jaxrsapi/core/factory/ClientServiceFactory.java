@@ -829,7 +829,7 @@ public class ClientServiceFactory {
         // 激活器的get和set方法
         jjc.getter(af, ServiceClient.MED_getActivator, "获取远程服务器控制器");
         // jjc.setter(af, ServiceClient.MED_setActivator, "配置远程服务器控制器");
-        JJMethod am = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_setActivator);
+        JJMethod am = jjc.method(JMod.PUBLIC, void.class, ServiceClient.MED_injectActivator);
         JMethodDef activatorMethod = am.getJMethodDef();
         activatorMethod.docComment().text("自动配置远程服务器控制器");
 
@@ -864,7 +864,7 @@ public class ClientServiceFactory {
             JMethodDef constructorMethod = jjc.getJClassDef().constructor(JMod.PUBLIC);
             constructorMethod.docComment().text("构造方法");
             JBlock constructorBody = constructorMethod.body();
-            constructorBody.call(ServiceClient.MED_setActivator);
+            constructorBody.call(ServiceClient.MED_injectActivator);
         }
         activatorBody.assign(JExprs.$v(activatorField), activatorVar);
         // 判断参数是否为空
@@ -1031,6 +1031,7 @@ public class ClientServiceFactory {
             for (Class<?> apiClass : aaInfo.getClasses()) {
                 DotName apiDotName = DotName.createSimple(apiClass.getName());
                 ClassInfo info = index.getClassByName(apiDotName);
+                IndexView current = index;
                 if (info == null) {
                     if (alternativeIndex == null) {
                         logger.info("无法从系统IndexView中查找ClassInfo, 启用备用IndexView: " + aaInfo.getActivatorName());
@@ -1044,11 +1045,12 @@ public class ClientServiceFactory {
                     if (info == null) {
                         throw new NullPointerException("无法从IndexView中获取ClassInfo: " + apiClass.getName());
                     }
+                    current = alternativeIndex;
                 }
                 // 生成api代理实体
                 String name = apiClass.getCanonicalName() + key;
                 JJClass jjc = jj.createClass(apiClass, name);
-                factory.createImpl(aaInfo, index, jjc, info);
+                factory.createImpl(aaInfo, current, jjc, info);
             }
             if (isCreateActivatorIndex) {
                 Map<Object, JJClass> classMap = jj.getClassMap();
