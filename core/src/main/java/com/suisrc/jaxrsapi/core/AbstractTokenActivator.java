@@ -510,6 +510,21 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
     protected String getTempFileName() {
         return null;
     }
+    
+    /**
+     * 修正文件名称
+     */
+    protected String getTempFileNameByKey(String filename, String key) {
+        if (key != null && !key.isEmpty()) {
+            int offset = filename.lastIndexOf('.');
+            if (offset > 0) {
+                filename = filename.substring(0, offset) + key + filename.substring(offset);
+            } else {
+                filename += "." + key;
+            }
+        }
+        return filename;
+    }
 
     /**
      * 把access token写入文件中，避免测试中频繁调用
@@ -524,14 +539,7 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
         if (filename == null || filename.isEmpty()) {
             return;
         }
-        if (key != null && !key.isEmpty()) {
-            int offset = key.indexOf('.');
-            if (offset > 0) {
-                filename = filename.substring(0, offset) + key + filename.substring(offset);
-            } else {
-                filename += "." + key;
-            }
-        }
+        filename = getTempFileNameByKey(filename, key);
         FileUtils.writeObject(filename, obj);
     }
 
@@ -548,14 +556,7 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
         if (filename == null || filename.isEmpty()) {
             return null;
         }
-        if (key != null && !key.isEmpty()) {
-            int offset = key.indexOf('.');
-            if (offset > 0) {
-                filename = filename.substring(0, offset) + key + filename.substring(offset);
-            } else {
-                filename += "." + key;
-            }
-        }
+        filename = getTempFileNameByKey(filename, key);
         File file = new File(filename);
         if (!file.exists()) {
             return null;
