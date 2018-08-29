@@ -516,11 +516,12 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
      */
     protected String getTempFileNameByKey(String filename, String key) {
         if (key != null && !key.isEmpty()) {
+            key = "_" + key; // 增加分隔符
             int offset = filename.lastIndexOf('.');
             if (offset > 0) {
                 filename = filename.substring(0, offset) + key + filename.substring(offset);
             } else {
-                filename += "." + key;
+                filename += key;
             }
         }
         return filename;
