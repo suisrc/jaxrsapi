@@ -75,8 +75,22 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
      * 远程访问执行到地址
      */
     protected String baseUrl;
+    
+    /**
+     * 重新计算token的次数
+     * 仅作为统计的手段
+     */
+    private long tokenStatistics = 0;
 
     // ----------------------------------------------------------------ZERO ApiActivator
+    
+    /**
+     * 获取token获取的次数
+     * @return
+     */
+    public long getTokenStatistics() {
+        return tokenStatistics;
+    }
     
     /**
      * 构造后被系统调用 进行内容初始化
@@ -281,7 +295,15 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
         // 读取系统文件中的access token
         // 拓扑网络中的token和临时系统中的token是不一样的
         // 请注意，该部分大部分用于调试，不用频繁访问token中控服务器
-        Token tkn = (Token) readTempObject(tokenKey);
+        Token tkn = null;
+        if (tokenStatistics == 0) {
+            // 为执行统计，第一个可以通过缓存文件获取
+            tkn = (Token) readTempObject(tokenKey);
+            if (tkn != null) {
+                // 计数器增加
+                tokenStatistics++;
+            }
+        }
         if (tkn == null) {
             // 初始化一个无效凭证
             tkn = new Token();
@@ -398,6 +420,7 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
                 writeTempObject(tokenAtom.getTokenKey(), tkn);
                 tokenAtom.getToken().set(tkn);
             }
+            tokenStatistics++; // token统计增加
         } finally {
             tokenAtom.getToken().getSyncLock().set(false); // 同步表示关闭
             unlockUpdateTokenByTopology(tokenAtom.getTokenKey());
