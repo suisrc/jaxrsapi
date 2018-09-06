@@ -26,7 +26,7 @@ import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-08-22T16:56:43.137
+ *   2018-09-06T20:41:45.821
  * <author>
  *   Y13
  */
@@ -47,10 +47,10 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
         return activator;
     }
     /**
-     * 配置远程服务器控制器
+     * 自动配置远程服务器控制器
      */
     @Named("test")
-    public void setActivator() {
+    public void injectActivator() {
         activator = CdiUtils.selectWithQualifier(ApiActivator.class);
         if (activator != null) postConstruct();
 
@@ -59,7 +59,13 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
      * 构造方法
      */
     public TestRest_jaxrsapi() {
-        setActivator();
+        injectActivator();
+    }
+    /**
+     * 手动更改远程服务器控制器
+     */
+    public void setActivator(ApiActivator pm) {
+        activator = pm;
     }
     /**
      * 接口实现
@@ -86,6 +92,11 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
             if (temp != null) pm0.setOther2(temp);
 
         }
+        if (pm0.getName1() == null) {
+            String temp = (String)activator.getAdapter("TestBean2", String.class);
+            if (temp != null) pm0.setName1(temp);
+
+        }
         if (pm0.getOther() == null) {
             String temp = (String)Transform.tf(T4Str.class, "t3");
             if (temp != null) pm0.setOther(temp);
@@ -98,7 +109,8 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
         }
         if (pm0.getAge() == null) throw new NullPointerException("年龄为空");
 
-        pm0.setName((new TReviseHandler()).accept(pm0.getName()));
+        pm0.setName((String)(new TReviseHandler()).accept(pm0.getName()));
+        pm0.setName1((String)(new TReviseHandler()).accept(pm0.getName1()));
         WebTarget target = ((WebTarget)activator.getAdapter("123", WebTarget.class)).path("test");
         TestRest proxy = ProxyBuilder.builder(TestRest.class, target).build();
         RetryPredicateImpl predicate = new RetryPredicateImpl(activator);
@@ -128,7 +140,7 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
         }
         if (pm0 == null) throw new NullPointerException("令牌类型为空");
 
-        pm0 = (new TReviseHandler()).accept(pm0);
+        pm0 = (String)(new TReviseHandler()).accept(pm0);
         return (String)(new TReviseHandler()).accept((new TLProxy()).hello(activator.getBaseUrl() + "/test" + "/cgi-bin/token", pm0));
     }
 }

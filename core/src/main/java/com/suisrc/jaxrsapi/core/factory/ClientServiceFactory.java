@@ -64,7 +64,6 @@ import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.ApiActivatorIndex;
 import com.suisrc.jaxrsapi.core.ApiActivatorInfo;
-//import com.suisrc.jaxrsapi.core.ApiActivatorInfo;
 import com.suisrc.jaxrsapi.core.ApiActivatorProxy;
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.ServiceClient;
@@ -248,15 +247,30 @@ public class ClientServiceFactory {
         }
         // -----------------------------------------------------------------------------------ZERO field 参数获取部分
         // 参数内部的属性
+        String objectName = Object.class.getName();
         for (int i = 0; i < parameters.size(); i++) {
             Type paramType = parameters.get(i);
+            
+            Map<DotName, List<AnnotationInstance>> annotations = new HashMap<>();
             // 查找参数的定义
-            ClassInfo classInfo = index.getClassByName(paramType.name());
-            if (classInfo == null) {
-                continue;
-            }
-            // -----------------------------------------------------------------------------------ZERO field ThreadValue参数获取部分
-            List<AnnotationInstance> annos_f = classInfo.annotations().get(DotName.createSimple(Value.class.getName()));
+            DotName className = paramType.name();
+            while (className != null && !className.toString().equals(objectName)) {
+                ClassInfo classInfo = index.getClassByName(className);
+                if (classInfo == null) {
+                    // 结束处理
+                    break;
+                }
+                classInfo.annotations().forEach((key, value) -> {
+                    List<AnnotationInstance> annos = annotations.get(key);
+                    if (annos == null) {
+                        annotations.put(key, annos = new ArrayList<>());
+                    }
+                    annos.addAll(value);
+                });;
+                // 父类型
+                className = classInfo.superName();
+            }// -----------------------------------------------------------------------------------ZERO field ThreadValue参数获取部分
+            List<AnnotationInstance> annos_f = annotations.get(DotName.createSimple(Value.class.getName()));
             if (annos_f != null && !annos_f.isEmpty()) {
                 for (AnnotationInstance anno : annos_f) { // Value
                     JCall methodExpr = getValueMethodExpr(jjm, anno);
@@ -276,7 +290,7 @@ public class ClientServiceFactory {
                 }
             }
             // -----------------------------------------------------------------------------------ZERO field DefaultValue参数获取部分
-            annos_f = classInfo.annotations().get(DotName.createSimple(DefaultValue.class.getName()));
+            annos_f = annotations.get(DotName.createSimple(DefaultValue.class.getName()));
             if (annos_f != null && !annos_f.isEmpty()) {
                 for (AnnotationInstance anno : annos_f) { // DefaultValue
                     AnnotationInstance tfAnno = null;
@@ -292,14 +306,14 @@ public class ClientServiceFactory {
                 }
             }
             // -----------------------------------------------------------------------------------ZERO field NotNull参数获取部分
-            annos_f = classInfo.annotations().get(DotName.createSimple(NotNull.class.getName()));
+            annos_f = annotations.get(DotName.createSimple(NotNull.class.getName()));
             if (annos_f != null && !annos_f.isEmpty()) {
                 for (AnnotationInstance anno : annos_f) { // NotNull
                     checkFieldNotNull(jjm, body, params.get(i), anno);
                 }
             }
             // -------------------------------------------------------------------------------ZERO 最后的数据修正拦截
-            annos_f = classInfo.annotations().get(DotName.createSimple(Reviser.class.getName()));
+            annos_f = annotations.get(DotName.createSimple(Reviser.class.getName()));
             if (annos_f != null && !annos_f.isEmpty()) {
                 for (AnnotationInstance anno : annos_f) { // reviser
                     JCall methodExpr = getReviserMethodExpr(jjm, anno);
@@ -1081,16 +1095,7 @@ public class ClientServiceFactory {
             Set<Class<?>> useClasses = new HashSet<>();
             for (ApiActivatorInfo info: infos) {
                 // 解析需要处理的接口内容
-                for (Class<?> apiClass : info.getClasses()) {
-                    useClasses.add(apiClass);
-                    for (Method method : apiClass.getMethods()) {
-                        for (Class<?> paramType : method.getParameterTypes()) {
-                            if (!paramType.isPrimitive()) {
-                                useClasses.add(paramType);
-                            }
-                        }
-                    }
-                }
+                findUseClasses(useClasses, info.getClasses());
             }
             for (Class<?> clazz : useClasses) {
                 InputStream is = loader.getResourceAsStream(clazz.getName().replace('.', '/') + ".class");
@@ -1101,6 +1106,29 @@ public class ClientServiceFactory {
         } catch (Exception e) {
             logger.warning("构建Indexer发生异常：" + e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * 查找使用的class
+     * @param useClasses
+     * @param apiClass
+     */
+    private static void findUseClasses(Set<Class<?>> useClasses, Set<Class<?>> apiClasses) {
+        for (Class<?> apiClass : apiClasses) {
+            useClasses.add(apiClass);
+            for (Method method : apiClass.getMethods()) {
+                for (Class<?> paramType : method.getParameterTypes()) {
+                    if (!paramType.isPrimitive()) {
+                        Class<?> clazz = paramType;
+                        while (clazz != null && clazz != Object.class) {
+                            useClasses.add(clazz);
+                            // 循环增加父类型
+                            clazz = clazz.getSuperclass();
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1121,16 +1149,7 @@ public class ClientServiceFactory {
                 ApiActivator activator = activatorClass.newInstance();
                 result.add(activator); // 放入缓存, 用于外部回调使用
                 // 解析需要处理的接口内容
-                for (Class<?> apiClass : activator.getClasses()) {
-                    useClasses.add(apiClass);
-                    for (Method method : apiClass.getMethods()) {
-                        for (Class<?> paramType : method.getParameterTypes()) {
-                            if (!paramType.isPrimitive()) {
-                                useClasses.add(paramType);
-                            }
-                        }
-                    }
-                }
+                findUseClasses(useClasses, activator.getClasses());
             }
             for (Class<?> clazz : useClasses) {
                 InputStream is = loader.getResourceAsStream(clazz.getName().replace('.', '/') + ".class");

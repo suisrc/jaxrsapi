@@ -12,7 +12,7 @@ import com.suisrc.jaxrsapi.core.annotation.Value;
  * @author Y13
  *
  */
-public class TestBean {
+public class TestBean extends TestBean2 {
     
     @Reviser(TReviseHandler.class)
     @Value("t1")
