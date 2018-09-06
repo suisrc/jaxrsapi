@@ -2,6 +2,7 @@ package com.suisrc.jaxrsapi.client;
 
 import java.io.IOException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,17 +41,21 @@ public class ClientUtils {
      * 单次访问有效
      */
     public static <T, R> R getRestfulImpl(String uri, Class<T> iface, Function<T, R> getter) {
-        ClientBuilder builder = ClientBuilderFactory.newBuilder();
-        Client client = builder.build();
+        return getRestfulResult(uri, iface, getter, null, null);
+    }
+    
+    /**
+     * 快速远程接口访问
+     * 
+     * 该方法旨在为用于提供快速访问
+     * 
+     * 单次访问有效
+     */
+    public static <T, R> R getRestfulResult(String uri, Class<T> iface, Function<T, R> getter,
+            Supplier<ClientBuilder> builderFactory, Function<ClientBuilder, Client> clientFactory) {
+        Client client = getClient(builderFactory, clientFactory);
         try {
-            WebTarget target = client.target(uri);
-            if (iface.isAnnotationPresent(RemoteApi.class)) {
-                RemoteApi path = iface.getAnnotation(RemoteApi.class);
-                if (!path.value().equals("") && !path.value().equals("/")) {
-                    target = target.path(path.value());
-                }
-            }
-            T proxy = ProxyBuilder.builder(iface, target).build();
+            T proxy = getRestfulApiImpl(uri, iface, client);
             return getter.apply(proxy);
         } finally {
             if (client != null) {
@@ -58,6 +63,37 @@ public class ClientUtils {
                 client.close();
             }
         }
+    }
+
+    /**
+     * 获取远程访问使用的实体
+     * @param uri
+     * @param iface
+     * @param client
+     * @return
+     */
+    public static <T> T getRestfulApiImpl(String uri, Class<T> iface, Client client) {
+        WebTarget target = client.target(uri);
+        if (iface.isAnnotationPresent(RemoteApi.class)) {
+            RemoteApi path = iface.getAnnotation(RemoteApi.class);
+            if (!path.value().equals("") && !path.value().equals("/")) {
+                target = target.path(path.value());
+            }
+        }
+        T proxy = ProxyBuilder.builder(iface, target).build();
+        return proxy;
+    }
+    
+    /**
+     * 获取访问使用的client
+     * @param builderFactory
+     * @param clientFactory
+     * @return
+     */
+    public static Client getClient(Supplier<ClientBuilder> builderFactory, Function<ClientBuilder, Client> clientFactory) {
+        ClientBuilder builder = builderFactory != null ? builderFactory.get() : ClientBuilderFactory.newBuilder();
+        Client client = clientFactory != null ? clientFactory.apply(builder) : builder.build();
+        return client;
     }
 
     /**
