@@ -57,7 +57,7 @@ public class NativeServiceClientFactory {
                 activator.doPostConstruct(); // 初始化
             }
             try {// 创建远程接口实现
-                ClientServiceFactory.createImpl(activator, index, (api, impl) -> {
+                ClientServiceFactory.createImpl(loader, activator, index, (api, impl) -> {
                     try {
                         if (target != null) {
                             impl.writeFile(target);
@@ -113,7 +113,7 @@ public class NativeServiceClientFactory {
             try {
                 // 创建远程接口实现
                 // 代码中是无法注入接口的实现的
-                ClientServiceFactory.createImpl(activator, index, target, classKey, true);
+                ClientServiceFactory.createImpl(loader, activator, index, target, classKey, true);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

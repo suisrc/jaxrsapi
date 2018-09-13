@@ -944,7 +944,7 @@ public class ClientServiceFactory {
      * @param cai
      * @throws Exception
      */
-    public static void processIndex(IndexView index, BiConsumer<Class<?>, CtClass> acceptThen, String key, boolean cai) throws Exception {
+    public static void processIndex(ClassLoader loader, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen, String key, boolean cai) throws Exception {
         Collection<ClassInfo> activatorClasses = index.getKnownDirectImplementors((DotName.createSimple(ApiActivator.class.getName())));
         Set<Class<?>> activatorSet = new HashSet<>();
         Set<Class<?>> subclasses = new HashSet<>(); // 用于判断是否为其他实体的继承
@@ -966,7 +966,7 @@ public class ClientServiceFactory {
             }
             // 有的时候，该内容是被临时使用的，没有任何意义
             ApiActivator activator = (ApiActivator) classActivator.newInstance();
-            createImpl(activator, index, acceptThen, key, cai);
+            createImpl(loader, activator, index, acceptThen, key, cai);
         }
     }
 
@@ -978,14 +978,14 @@ public class ClientServiceFactory {
      * @param cai
      * @throws Exception
      */
-    public static void processIndex(ApiActivatorInfo aaInfo, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen,
+    public static void processIndex(ClassLoader loader, ApiActivatorInfo aaInfo, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen,
             String key, boolean cai, String targetFile) throws Exception {
         JdeJst jjst = new JdeJst();
         if (targetFile != null) {
             jjst.setShowSrc(true);
             jjst.setTarget(new File(targetFile));
         }
-        createImpl(aaInfo, index, jjst, jj -> {
+        createImpl(loader, aaInfo, index, jjst, jj -> {
             Map<Object, CtClass> ctClasses = jj.writeSource();
             ctClasses.entrySet().forEach(v -> acceptThen.accept((Class<?>) v.getKey(), v.getValue()));
         }, key != null ? key : "$$jaxrsapi", cai);
@@ -1000,8 +1000,8 @@ public class ClientServiceFactory {
      * @param cai
      * @throws Exception
      */
-    static void createImpl(ApiActivator activator, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen, String key, boolean cai) throws Exception {
-        createImpl(new ApiActivatorProxy(activator), index, new JdeJst(), jj -> {
+    static void createImpl(ClassLoader loader, ApiActivator activator, IndexView index, BiConsumer<Class<?>, CtClass> acceptThen, String key, boolean cai) throws Exception {
+        createImpl(loader, new ApiActivatorProxy(activator), index, new JdeJst(), jj -> {
             Map<Object, CtClass> ctClasses = jj.writeSource();
             ctClasses.entrySet().forEach(v -> acceptThen.accept((Class<?>)v.getKey(), v.getValue()));
         }, key != null ? key : "$$jaxrsapi", cai);
@@ -1016,11 +1016,11 @@ public class ClientServiceFactory {
      * @param cai
      * @throws Exception
      */
-    static void createImpl(ApiActivator activator, IndexView index, String targetFile, String key, boolean cai) throws Exception {
+    static void createImpl(ClassLoader loader, ApiActivator activator, IndexView index, String targetFile, String key, boolean cai) throws Exception {
         JdeJst jjst = new JdeJst();
         jjst.setTarget(new File(targetFile));
         jjst.setShowSrc(true); // 需要输出文件
-        createImpl(new ApiActivatorProxy(activator), index, jjst, jj -> jj.writeSource4File(), key != null ? key : "_jaxrsapi", cai);
+        createImpl(loader, new ApiActivatorProxy(activator), index, jjst, jj -> jj.writeSource4File(), key != null ? key : "_jaxrsapi", cai);
     }
 
     /**
@@ -1037,7 +1037,7 @@ public class ClientServiceFactory {
      * @param isCreateActivatorIndex 是否构建激活器的索引
      * @throws Exception
      */
-    public static void createImpl(ApiActivatorInfo aaInfo, IndexView index, JdeJst jj, Consumer<JdeJst> accpetThen, 
+    public static void createImpl(ClassLoader loader, ApiActivatorInfo aaInfo, IndexView index, JdeJst jj, Consumer<JdeJst> accpetThen, 
             String key, boolean isCreateActivatorIndex) throws Exception {
         ClientServiceFactory factory = new ClientServiceFactory();
         try {
@@ -1049,7 +1049,6 @@ public class ClientServiceFactory {
                 if (info == null) {
                     if (alternativeIndex == null) {
                         logger.info("无法从系统IndexView中查找ClassInfo, 启用备用IndexView: " + aaInfo.getActivatorName());
-                        ClassLoader loader = Thread.currentThread().getContextClassLoader();
                         alternativeIndex = createIndexer(loader, aaInfo);
                         if (alternativeIndex == null) {
                             throw new NullPointerException("无法获取备用IndexView: " + apiClass.getName());
