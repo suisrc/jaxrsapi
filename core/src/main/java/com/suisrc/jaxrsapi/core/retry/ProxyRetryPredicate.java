@@ -3,6 +3,7 @@ package com.suisrc.jaxrsapi.core.retry;
 import java.util.concurrent.Callable;
 
 import com.suisrc.core.Global;
+import com.suisrc.core.utils.Throwables;
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.ServiceClient;
 import com.suisrc.jaxrsapi.core.runtime.RetryPredicate;
@@ -64,6 +65,10 @@ public class ProxyRetryPredicate implements RetryPredicate<Object> {
         if (target == null) {
             target = (RetryPredicate) Global.getThreadCache().get(JaxrsConsts.PROXY_RETRY_PREDICATE);
             if (target == null) {
+                if (e != null) {
+                    // 抛出异常， 内容无法处理
+                    throw Throwables.getRuntimeException(e);
+                }
                 return false;
             }
             if (clinet != null && target instanceof ProxyRetryPredicate2) {
