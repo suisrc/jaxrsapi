@@ -72,10 +72,12 @@ import com.suisrc.jaxrsapi.core.annotation.NonProxy;
 import com.suisrc.jaxrsapi.core.annotation.NotNull;
 import com.suisrc.jaxrsapi.core.annotation.OneTimeProxy;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
+import com.suisrc.jaxrsapi.core.annotation.RetryProxy;
 import com.suisrc.jaxrsapi.core.annotation.Retry;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.TfDefaultValue;
 import com.suisrc.jaxrsapi.core.annotation.Value;
+import com.suisrc.jaxrsapi.core.retry.ProxyRetryPredicate;
 import com.suisrc.jaxrsapi.core.runtime.RetryPredicate;
 import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 
@@ -568,8 +570,28 @@ public class ClientServiceFactory {
             methodExpr = reviserExpr.arg(methodExpr);
         }
         // 对于请求的内容，是否支持重试
-        anno = method.annotation(DotName.createSimple(Retry.class.getName()));
-        JExpr result = anno == null ? methodExpr.cast(method.returnType().name().toString()) : getRetryExpr(jjm, body, method, methodExpr, anno, retrylst);
+        JExpr result;
+        if ((anno = method.annotation(DotName.createSimple(Retry.class.getName()))) != null) {
+            // Retry.class
+            String clazz = anno.value().asClass().name().toString(); // 类型
+            AnnotationValue ave = anno.value("master"); // 初始化构造时候，使用的构造参数
+            String master = ave == null ? JaxrsConsts.NONE : ave.asString();
+            ave = anno.value("count");
+            int count = ave == null ? 2 : ave.asInt();
+            // 获取执行的结果
+            result = getRetryExpr(jjm, body, method, methodExpr, retrylst, clazz, master, count);
+        } else if ((anno = method.annotation(DotName.createSimple(RetryProxy.class.getName()))) != null) {
+            // RetryProxy
+            // 如果同时配置，以Retry为准（小范围优先）
+            String clazz = ProxyRetryPredicate.class.getCanonicalName(); // 内容固定
+            String master = JaxrsConsts.FIELD_THIS; // 内容固定
+            AnnotationValue ave = anno.value();
+            int count = ave == null ? 2 : ave.asInt();
+            // 获取执行的结果
+            result = getRetryExpr(jjm, body, method, methodExpr, retrylst, clazz, master, count);
+        } else {
+            result = methodExpr.cast(method.returnType().name().toString());
+        }
         // 设定返回值
         body._return(result);
     }
@@ -594,13 +616,8 @@ public class ClientServiceFactory {
      *  
      * 没有给参数，参数这里无法给出
      */
-    private JExpr getRetryExpr(JJMethod jjm, JBlock body, MethodInfo method, JCall jcm, AnnotationInstance anno, List<Consumer<JBlock>> retrylst) {
-        // Retry.class
-        String clazz = anno.value().asClass().name().toString(); // 类型
-        AnnotationValue ave = anno.value("master"); // 初始化构造时候，使用的构造参数
-        String master = ave == null ? JaxrsConsts.NONE : ave.asString();
-        ave = anno.value("count");
-        int count = ave == null ? 2 : ave.asInt();
+    private JExpr getRetryExpr(JJMethod jjm, JBlock body, MethodInfo method, JCall jcm, List<Consumer<JBlock>> retrylst,
+            String clazz, String master, int count) {
         // 构建代码
         jjm.getJJClass()._import(clazz);
         JType testType = JTypes.typeNamed(clazz); //断言类型

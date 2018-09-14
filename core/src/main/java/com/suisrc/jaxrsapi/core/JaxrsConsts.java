@@ -86,4 +86,9 @@ public interface JaxrsConsts {
      * 请求内容key,用于线程缓存中获取请求内容
      */
     final String CONTAINER_REQUEST_CONTEXT = "one-container-request-context"; //$NON-NLS-N$
+    
+    /**
+     * 请求重试代理的内容
+     */
+    final String PROXY_RETRY_PREDICATE = "PROXY_RETRY_PREDICATE";
 }

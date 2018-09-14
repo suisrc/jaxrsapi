@@ -1,7 +1,9 @@
-package com.suisrc.jaxrsapi.core;
+package com.suisrc.jaxrsapi.core.retry;
 
 import com.suisrc.core.utils.Throwables;
+import com.suisrc.jaxrsapi.core.AbstractTokenActivator;
 import com.suisrc.jaxrsapi.core.ApiActivator;
+import com.suisrc.jaxrsapi.core.ServiceClient;
 import com.suisrc.jaxrsapi.core.runtime.RetryPredicate;
 
 /**
@@ -10,12 +12,17 @@ import com.suisrc.jaxrsapi.core.runtime.RetryPredicate;
  * @author Y13
  *
  */
-public abstract class AutoClearAccessToken implements RetryPredicate<Object> {
+public abstract class AutoClearAccessToken implements RetryPredicate<Object>, ProxyRetryPredicate2 {
 
     /**
      * 激活器
      */
-    private ApiActivator activator;
+    protected ApiActivator activator;
+    
+    /**
+     * 构造方法
+     */
+    public AutoClearAccessToken() { }
     
     /**
      * 构造方法
@@ -23,6 +30,14 @@ public abstract class AutoClearAccessToken implements RetryPredicate<Object> {
      */
     public AutoClearAccessToken(ApiActivator activator) {
         this.activator = activator;
+    }
+    
+    /**
+     * 修正绑定的激活器
+     */
+    @Override
+    public void setServiceClient(ServiceClient clinet) {
+        this.activator = clinet.getActivator();
     }
 
     /**

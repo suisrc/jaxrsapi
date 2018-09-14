@@ -15,7 +15,7 @@ import com.suisrc.jaxrsapi.core.annotation.Value;
 public class TestBean extends TestBean2 {
     
     @Reviser(TReviseHandler.class)
-    @Value("t1")
+    @Value(value="t1", retry = true)
     private String name;
 
     @NotNull("年龄为空")

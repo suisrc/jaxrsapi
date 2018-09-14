@@ -7,12 +7,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.annotation.LocalProxy;
 import com.suisrc.jaxrsapi.core.annotation.NotNull;
 import com.suisrc.jaxrsapi.core.annotation.OneTimeProxy;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
-import com.suisrc.jaxrsapi.core.annotation.Retry;
+import com.suisrc.jaxrsapi.core.annotation.RetryProxy;
 import com.suisrc.jaxrsapi.core.annotation.Reviser;
 import com.suisrc.jaxrsapi.core.annotation.Value;
 
@@ -28,7 +27,8 @@ public interface TestRest {
     /**
      * 普通接口
      */
-    @Retry(value=RetryPredicateImpl.class, count = 16, master = JaxrsConsts.FIELD_ACTIVATOR)
+    @RetryProxy(5)
+//    @Retry(value=RetryPredicateImpl.class, count = 16, master = JaxrsConsts.FIELD_ACTIVATOR)
     @Reviser(TReviseHandler.class)
     @GET
     @Path("cgi-bin/token")

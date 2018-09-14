@@ -8,7 +8,7 @@ import java.lang.String;
 import javax.enterprise.context.ApplicationScoped;
 import java.lang.Exception;
 import com.suisrc.jaxrsapi.test.bean.TLProxy;
-import com.suisrc.jaxrsapi.test.bean.RetryPredicateImpl;
+import com.suisrc.jaxrsapi.core.retry.ProxyRetryPredicate;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.test.bean.TestBean;
 import com.suisrc.jaxrsapi.core.ServiceClient;
@@ -26,7 +26,7 @@ import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-09-06T20:41:45.821
+ *   2018-09-14T11:54:40.249
  * <author>
  *   Y13
  */
@@ -113,19 +113,21 @@ public class TestRest_jaxrsapi implements TestRest, ServiceClient {
         pm0.setName1((String)(new TReviseHandler()).accept(pm0.getName1()));
         WebTarget target = ((WebTarget)activator.getAdapter("123", WebTarget.class)).path("test");
         TestRest proxy = ProxyBuilder.builder(TestRest.class, target).build();
-        RetryPredicateImpl predicate = new RetryPredicateImpl(activator);
-        int count = 0x10;
+        ProxyRetryPredicate predicate = new ProxyRetryPredicate(this);
+        int count = 0x5;
         String result;
         Exception exception;
         do {
             result = null;
             exception = null;
             try {
+                if (count != 0x5) pm0.setName(activator.getAdapter("t1", String.class));
+
                 result = (new TReviseHandler()).accept(proxy.getApi_1(pm0));
             } catch (Exception e) {
                 exception = e;
             }
-        } while (predicate.test(0x10, --count, result, exception) && count > 0);
+        } while (predicate.test(0x5, --count, result, exception) && count > 0);
         return result;
     }
     /**
