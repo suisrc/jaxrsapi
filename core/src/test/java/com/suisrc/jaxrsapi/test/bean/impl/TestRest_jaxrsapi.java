@@ -1,6 +1,7 @@
 package com.suisrc.jaxrsapi.test.bean.impl;
 
 import javax.inject.Named;
+import javax.annotation.Priority;
 import com.suisrc.core.utils.CdiUtils;
 import com.suisrc.jaxrsapi.test.bean.TReviseHandler;
 import com.suisrc.jaxrsapi.test.bean.T4Str;
@@ -26,11 +27,12 @@ import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-09-14T11:54:40.249
+ *   2018-10-09T15:33:28.941
  * <author>
  *   Y13
  */
 @ApplicationScoped
+@Priority(0x1)
 public class TestRest_jaxrsapi implements TestRest, ServiceClient {
     /*
      * 远程服务器控制器，具有服务器信息

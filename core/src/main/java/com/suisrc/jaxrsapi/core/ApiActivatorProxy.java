@@ -34,6 +34,11 @@ public class ApiActivatorProxy implements ApiActivatorInfo {
     }
 
     @Override
+    public Integer getApiPriority() {
+        return target.getApiPriority();
+    }
+
+    @Override
     public String getActivatorName() {
         Named named = target.getClass().getAnnotation(Named.class);
         if (named == null) {
@@ -56,5 +61,4 @@ public class ApiActivatorProxy implements ApiActivatorInfo {
     public String getActivatorPackageName() {
         return target.getClass().getPackage().getName();
     }
-
 }

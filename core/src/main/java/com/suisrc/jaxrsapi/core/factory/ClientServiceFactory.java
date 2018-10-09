@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Named;
 import javax.ws.rs.DELETE;
@@ -785,6 +786,11 @@ public class ClientServiceFactory {
             jjc._import(Named.class);
             anno = jjc.annotate(Named.class);
             jjc.annotateValue(anno, "value", activatorName + JaxrsConsts.separator + classInfo.name().toString());
+        }
+        if (aaInfo.getApiPriority() != null) { // 需要增加编译等级
+            jjc._import(Priority.class);
+            anno = jjc.annotate(Priority.class);
+            jjc.annotateValue(anno, "value", aaInfo.getApiPriority());
         }
         // 继承的接口
         jjc._import(api);

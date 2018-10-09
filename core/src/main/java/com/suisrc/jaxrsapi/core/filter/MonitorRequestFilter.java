@@ -23,16 +23,20 @@ public class MonitorRequestFilter implements ClientRequestFilter {
     private static final Logger logger = Logger.getLogger(MonitorRequestFilter.class.getName());
     
     /**
-     * 服务器激活器
+     * 请求名称
      */
-    private ApiActivator activator;
+    private String requestName;
     
     /**
      * 
      * @param activator
      */
     public MonitorRequestFilter(ApiActivator activator) {
-        this.activator = activator;
+        this.requestName = activator.getClass().getCanonicalName();
+    }
+    
+    public String getRequestName() {
+        return requestName;
     }
 
     /**
@@ -42,8 +46,7 @@ public class MonitorRequestFilter implements ClientRequestFilter {
     public void filter(final ClientRequestContext rtx) throws IOException {
         Global.getScExecutor().execute(() -> {
             StringBuilder sbir = new StringBuilder();
-            String name = activator.getClass().getCanonicalName();
-            sbir.append("execute remote access request by [" + name + "]\n");
+            sbir.append("execute remote access request by [" + getRequestName() + "]\n");
             sbir.append("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓\n");
             sbir.append(rtx.getMethod()).append(' ').append(rtx.getUri());
             //--------------------增加header内容
@@ -53,7 +56,7 @@ public class MonitorRequestFilter implements ClientRequestFilter {
             if (rtx.hasEntity()) {
                 sbir.append("----------entity----------\n");
                 if (OutputStream.class.isAssignableFrom(rtx.getEntityClass())) {
-                    sbir.append("stream data").append('\n');
+                    sbir.append("output stream data").append('\n');
                 } else {
                     FasterFactory f = FF.getDefault();
                     String content = f.convert2String(f.getObjectMapper(Type.JSON), true, rtx.getEntity());

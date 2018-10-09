@@ -54,5 +54,13 @@ public interface ApiActivatorInfo {
      * 获取几乎器包名
      */
     String getActivatorPackageName();
+    
+    /**
+     * 获取API的优先级， 一边在多模态下有必须要性
+     * @return
+     */
+    default Integer getApiPriority() {
+        return null;
+    }
 
 }

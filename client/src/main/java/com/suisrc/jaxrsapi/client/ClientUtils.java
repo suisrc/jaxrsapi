@@ -19,7 +19,13 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.jboss.resteasy.client.jaxrs.ClientBuilderFactory;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
+import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.suisrc.core.utils.ComUtils;
 import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
@@ -156,4 +162,31 @@ public class ClientUtils {
         return null;
     }
 
+    /**
+     * 提供器
+     * 
+     * @return
+     */
+    public static ResteasyProviderFactory getNativeProviderFactory() {
+        // create a new one
+        ResteasyProviderFactory providerFactory = new LocalResteasyProviderFactory(ResteasyProviderFactory.newInstance());
+        RegisterBuiltin.register(providerFactory);
+        providerFactory.registerProvider(JacksonJsonProvider.class, true); // 装载翻译器
+        providerFactory.registerProvider(JacksonXMLProvider.class, true); // 装载翻译器
+        return providerFactory;
+    }
+    
+    /**
+     * 获取访问使用的client
+     * @param builderFactory
+     * @param clientFactory
+     * @return
+     */
+    public static Client getClientWithProvider() {
+        ClientBuilder builder = ClientBuilderFactory.newBuilder();
+        ResteasyProviderFactory provider = getNativeProviderFactory();
+        ((ResteasyClientBuilder)builder).providerFactory(provider);
+        Client client = builder.build();
+        return client;
+    }
 }

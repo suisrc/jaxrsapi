@@ -9,7 +9,7 @@ import com.suisrc.jaxrsapi.core.ApiActivatorIndex;
  * <generateBy>
  *   com.suisrc.jaxrsapi.core.factory.ClientServiceFactory
  * <time>
- *   2018-09-14T11:54:40.288
+ *   2018-10-09T15:33:28.981
  * <author>
  *   Y13
  */

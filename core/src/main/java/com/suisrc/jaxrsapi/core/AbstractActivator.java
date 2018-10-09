@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
-import javax.inject.Named;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -284,15 +283,16 @@ public abstract class AbstractActivator implements ApiActivator {
             return null;
         }
         if (apiType.isAssignableFrom(value.getClass())) {
-            // 该内容被注册过，有限使用注册的内容
+            // 该内容被注册过，优先使用注册的内容
             return (T) value;
         }
         if (!(value instanceof Class)) {
             return null;
         }
         Class<?> impClass = (Class) value;
-        Named named = impClass.getAnnotation(Named.class);
         // 通过注入获取需要调用的内容
-        return named == null ? CdiUtils.select(apiType) : CdiUtils.select(apiType, named);
+        // Named named = impClass.getAnnotation(Named.class);
+        // Object obj = named == null ? CdiUtils.select(impClass) : CdiUtils.select(impClass, named);
+        return (T) CdiUtils.select(impClass);
     }
 }

@@ -32,6 +32,11 @@ public class TestServerActivator implements ApiActivator {
     public boolean isStdInject() {
         return false;
     }
+    
+    @Override
+    public Integer getApiPriority() {
+        return 1;
+    }
 
     
     @SuppressWarnings("unchecked")

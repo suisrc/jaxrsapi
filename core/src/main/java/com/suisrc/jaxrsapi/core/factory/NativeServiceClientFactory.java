@@ -4,13 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.jandex.IndexView;
-import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
-import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.suisrc.core.Global;
+import com.suisrc.jaxrsapi.client.ClientUtils;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.JaxrsConsts;
 import com.suisrc.jaxrsapi.core.ServiceClient;
@@ -33,7 +30,7 @@ public class NativeServiceClientFactory {
      */
     public static void initApiActivator(ApiActivator... activators) {
         for (ApiActivator activator : activators) {
-            activator.setAdapter((String)null, ResteasyProviderFactory.class, getNativeProviderFactory());
+            activator.setAdapter((String)null, ResteasyProviderFactory.class, ClientUtils.getNativeProviderFactory());
             activator.doPostConstruct();
         }
     }
@@ -53,7 +50,7 @@ public class NativeServiceClientFactory {
         for (ApiActivator activator : activators) {
             // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
             if (newInstance) {
-                activator.setAdapter((String)null, ResteasyProviderFactory.class, getNativeProviderFactory());
+                activator.setAdapter((String)null, ResteasyProviderFactory.class, ClientUtils.getNativeProviderFactory());
                 activator.doPostConstruct(); // 初始化
             }
             try {// 创建远程接口实现
@@ -107,7 +104,7 @@ public class NativeServiceClientFactory {
         for (ApiActivator activator : activators) {
             if (init) {
                 // 由于默认的provider在本地访问中是失效的，所以在这里提供新的访问方式
-                activator.setAdapter((String)null, ResteasyProviderFactory.class, getNativeProviderFactory());
+                activator.setAdapter((String)null, ResteasyProviderFactory.class, ClientUtils.getNativeProviderFactory());
                 activator.doPostConstruct(); // 初始化
             }
             try {
@@ -121,20 +118,6 @@ public class NativeServiceClientFactory {
     }
 
     // -----------------------------------------------------------------------------------------------------------------//
-
-    /**
-     * 提供器
-     * 
-     * @return
-     */
-    public static ResteasyProviderFactory getNativeProviderFactory() {
-        // create a new one
-        ResteasyProviderFactory providerFactory = new LocalResteasyProviderFactory(ResteasyProviderFactory.newInstance());
-        RegisterBuiltin.register(providerFactory);
-        providerFactory.registerProvider(JacksonJsonProvider.class, true); // 装载翻译器
-        providerFactory.registerProvider(JacksonXMLProvider.class, true); // 装载翻译器
-        return providerFactory;
-    }
 
     /**
      * 构建调用代码

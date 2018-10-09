@@ -52,6 +52,14 @@ public interface ApiActivator {
     default boolean isMulitMode() {
         return false;
     }
+    
+    /**
+     * 获取API的优先级， 一边在多模态下有必须要性
+     * @return
+     */
+    default Integer getApiPriority() {
+        return null;
+    }
 
     /**
      * 把自己强制转换为其他类型
