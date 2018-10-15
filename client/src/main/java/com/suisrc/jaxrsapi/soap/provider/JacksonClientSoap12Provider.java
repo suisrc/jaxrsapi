@@ -16,6 +16,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
+import javax.xml.stream.XMLStreamException;
 
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ClientInvoker;
 
@@ -27,10 +28,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.suisrc.core.Global;
 import com.suisrc.core.cache.ScopedCache;
@@ -72,8 +74,8 @@ public class JacksonClientSoap12Provider extends JacksonXMLProvider {
     
     private String prefix = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
             + "<soap12:Envelope "
-            + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-            + "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "
+            // + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+            // + "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "
             + "xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">"
             + "<soap12:Body>";
     
@@ -178,11 +180,16 @@ public class JacksonClientSoap12Provider extends JacksonXMLProvider {
         // 配置
         ByteArrayOutputStream tmp = new ByteArrayOutputStream();
         JsonEncoding enc = findEncoding(mediaType, httpHeaders);
-        JsonGenerator g = mapper.getFactory().createGenerator(tmp, enc);
+        
+        if (!wma.prefix().isEmpty() && !wma.prefixAll()) {
+            // 替换输出工厂对象
+            mapper.getFactory().setXMLOutputFactory(new WstxOutputFactory2());
+        }
+        ToXmlGenerator g = mapper.getFactory().createGenerator(tmp, enc);
         g.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
         // 执行
         // mapper.writeTree(g, root);
-        writeTree(mapper, g, root, wma.operationName(), wma.namespace());
+        writeTree(mapper, g, root, wma.operationName(), wma.namespace(), wma.prefix(), wma.prefixAll());
         
         entityStream.write(prefix.getBytes());
         entityStream.write(tmp.toByteArray());
@@ -194,21 +201,18 @@ public class JacksonClientSoap12Provider extends JacksonXMLProvider {
     }
 
     /**
+     * @throws XMLStreamException 
      *  
-     * @param mapper
-     * @param jgen
-     * @param rootNode
-     * @param rootname
-     * @param namespace
-     * @throws IOException
-     * @throws JsonProcessingException
      */
-    public void writeTree(XmlMapper mapper, JsonGenerator jgen, JsonNode rootNode, 
-            String ln, String ns) throws IOException, JsonProcessingException {
+    public void writeTree(XmlMapper mapper, ToXmlGenerator jgen, JsonNode rootNode, 
+            String ln, String ns, String lnp, boolean lna) throws IOException, JsonProcessingException {
         SerializationConfig config0 = mapper.getSerializationConfig();
-         SerializationConfig config = config0.withRootName(PropertyName.construct(ln, ns));
-        DefaultSerializerProvider provider0 = (DefaultSerializerProvider) mapper.getSerializerProvider();
-        DefaultSerializerProvider provider = provider0.createInstance(config, mapper.getSerializerFactory());
+        SerializationConfig config = config0.withRootName(PropertyName.construct(ln, ns));
+        // DefaultSerializerProvider provider0 = (DefaultSerializerProvider) mapper.getSerializerProvider();
+        // DefaultSerializerProvider provider = provider0.createInstance(config, mapper.getSerializerFactory());
+        SerializerProvider provider0 = mapper.getSerializerProvider();
+        XmlSerializerProvider2 provider = XmlSerializerProvider2.createInstance0(provider0, config, mapper.getSerializerFactory());
+        provider.setRootNamePrefix(lnp);
         provider.serializeValue(jgen, rootNode);
         if (config.isEnabled(SerializationFeature.FLUSH_AFTER_WRITE_VALUE)) {
             jgen.flush();

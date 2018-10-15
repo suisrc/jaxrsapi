@@ -23,4 +23,8 @@ public @interface Soap12XmlMethod {
      * @return
      */
     String operationResponse() default "";
+
+    String prefix() default "";
+    
+    boolean prefixAll() default false;
 }

@@ -7,7 +7,6 @@ public class SzsjjjdRequest {
     
     private String licensekey;
     
-    
     public String getLicensekey() {
         return licensekey;
     }

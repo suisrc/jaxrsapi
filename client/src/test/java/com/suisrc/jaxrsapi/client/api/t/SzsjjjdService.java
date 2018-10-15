@@ -16,7 +16,7 @@ public interface SzsjjjdService {
     @POST
     @Produces(SoapConsts.APPLICATION_SOAP12_XML)
     @Consumes(SoapConsts.APPLICATION_SOAP12_XML)
-    @Soap12XmlMethod(operationName = "postesalescreate", namespace="http://tempurl.org")
+    @Soap12XmlMethod(operationName = "postesalescreate", namespace="http://tempurl.org" , prefix = "ns1"/*, prefixAll = true */)
     SzsjjjdResult postesalescreate (SzsjjjdRequest request);
 
 }
