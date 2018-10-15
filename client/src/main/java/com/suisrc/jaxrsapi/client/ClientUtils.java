@@ -27,6 +27,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.suisrc.core.utils.ComUtils;
+import com.suisrc.jaxrsapi.client.proxy.ClientInvokerInterceptor;
 import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
 
@@ -38,7 +39,7 @@ import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
  */
 public class ClientUtils {
     private static final Logger logger = Logger.getLogger(ComUtils.class.getName());
-    
+
     /**
      * 快速远程接口访问
      * 
@@ -49,7 +50,7 @@ public class ClientUtils {
     public static <T, R> R getRestfulImpl(String uri, Class<T> iface, Function<T, R> getter) {
         return getRestfulResult(uri, iface, getter, null, null);
     }
-    
+
     /**
      * 快速远程接口访问
      * 
@@ -73,6 +74,7 @@ public class ClientUtils {
 
     /**
      * 获取远程访问使用的实体
+     * 
      * @param uri
      * @param iface
      * @param client
@@ -89,9 +91,31 @@ public class ClientUtils {
         T proxy = ProxyBuilder.builder(iface, target).build();
         return proxy;
     }
-    
+
+    /**
+     * 获取远程访问使用的实体
+     * 
+     * @param uri
+     * @param iface
+     * @param client
+     * @return
+     */
+    public static <T> T getRestfulApiImplWithInterceptor(String uri, Class<T> iface, Client client, 
+            ClientInvokerInterceptor interceptor) {
+        WebTarget target = client.target(uri);
+        if (iface.isAnnotationPresent(RemoteApi.class)) {
+            RemoteApi path = iface.getAnnotation(RemoteApi.class);
+            if (!path.value().equals("") && !path.value().equals("/")) {
+                target = target.path(path.value());
+            }
+        }
+        T proxy = ProxyBuilder.builder(iface, target).buildWithInterceptor(interceptor);
+        return proxy;
+    }
+
     /**
      * 获取访问使用的client
+     * 
      * @param builderFactory
      * @param clientFactory
      * @return
@@ -125,7 +149,7 @@ public class ClientUtils {
             logger.info("HttpResponse is null, can't get localhost ip.");
             return null;
         }
-        
+
         String ipRex = System.getProperty("TEST_LOCALHOST_IP_REX");
         if (ipRex == null) {
             return content;
@@ -133,7 +157,7 @@ public class ClientUtils {
         Matcher matcher = Pattern.compile(ipRex).matcher(content);
         return matcher.find() ? matcher.group() : null;
     }
-    
+
     /**
      * 远程访问
      * 
@@ -143,13 +167,13 @@ public class ClientUtils {
     public static String doRequest(HttpUriRequest request) {
         CloseableHttpClient client = HttpClients.createDefault();
         try {
-            //发送get请求
+            // 发送get请求
             HttpResponse response = client.execute(request);
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
                 return EntityUtils.toString(response.getEntity());
             }
         } catch (IOException e) {
-            logger.info("远程访问[" +request.getURI().toString() + "]失败：" + e.getMessage());
+            logger.info("远程访问[" + request.getURI().toString() + "]失败：" + e.getMessage());
         } finally {
             if (client != null) {
                 try {
@@ -175,9 +199,10 @@ public class ClientUtils {
         providerFactory.registerProvider(JacksonXMLProvider.class, true); // 装载翻译器
         return providerFactory;
     }
-    
+
     /**
      * 获取访问使用的client
+     * 
      * @param builderFactory
      * @param clientFactory
      * @return
@@ -185,8 +210,9 @@ public class ClientUtils {
     public static Client getClientWithProvider() {
         ClientBuilder builder = ClientBuilderFactory.newBuilder();
         ResteasyProviderFactory provider = getNativeProviderFactory();
-        ((ResteasyClientBuilder)builder).providerFactory(provider);
+        ((ResteasyClientBuilder) builder).providerFactory(provider);
         Client client = builder.build();
         return client;
     }
+
 }

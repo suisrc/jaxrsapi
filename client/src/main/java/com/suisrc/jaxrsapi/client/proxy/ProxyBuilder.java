@@ -47,9 +47,14 @@ public class ProxyBuilder<T> {
     public static <T> ProxyBuilder<T> builder(Class<T> iface, WebTarget webTarget) {
         return new ProxyBuilder<T>(iface, (ResteasyWebTarget) webTarget);
     }
+    
+    public static <T> T proxy(final Class<T> iface, WebTarget base, final ProxyConfig config) {
+        return proxy(iface, base, config, null);
+    }
 
     @SuppressWarnings("unchecked")
-    public static <T> T proxy(final Class<T> iface, WebTarget base, final ProxyConfig config) {
+    public static <T> T proxy(final Class<T> iface, WebTarget base, final ProxyConfig config, 
+            ClientInvokerInterceptor interceptor) {
         if (iface.isAnnotationPresent(Path.class)) {
             Path path = iface.getAnnotation(Path.class);
             if (!path.value().equals("") && !path.value().equals("/")) {
@@ -74,7 +79,7 @@ public class ProxyBuilder<T> {
                     && method.getReturnType().isInterface()) {
                 invoker = new SubResourceInvoker((ResteasyWebTarget) base, method, config);
             } else {
-                invoker = createClientInvoker(iface, method, (ResteasyWebTarget) base, config);
+                invoker = createClientInvoker(iface, method, (ResteasyWebTarget) base, config, interceptor);
             }
             methodMap.put(method, invoker);
         }
@@ -83,8 +88,7 @@ public class ProxyBuilder<T> {
 
         ClientProxy clientProxy = new ClientProxy(methodMap, base, config);
         // this is done so that equals and hashCode work ok. Adding the proxy to
-        // a
-        // Collection will cause equals and hashCode to be invoked. The Spring
+        // a Collection will cause equals and hashCode to be invoked. The Spring
         // infrastructure had some problems without this.
         clientProxy.setClazz(iface);
 
@@ -92,12 +96,17 @@ public class ProxyBuilder<T> {
     }
 
     private static <T> ClientInvoker createClientInvoker(Class<T> clazz, Method method, ResteasyWebTarget base,
-            ProxyConfig config) {
+            ProxyConfig config, ClientInvokerInterceptor interceptor) {
+        
         Set<String> httpMethods = IsHttpMethod.getHttpMethods(method);
         if (httpMethods == null || httpMethods.size() != 1) {
             throw new RuntimeException(Messages.MESSAGES.mustUseExactlyOneHttpMethod(method.toString()));
         }
-        ClientInvoker invoker = new ClientInvoker(base, clazz, method, config);
+        // ClientInvoker invoker = new ClientInvoker(base, clazz, method, config);
+        // Intercept
+        ProxyClientInvoker invoker = new ProxyClientInvoker(base, clazz, method, config);
+        invoker.setInterceptor(interceptor);
+        // set http method
         invoker.setHttpMethod(httpMethods.iterator().next());
         return invoker;
     }
@@ -133,7 +142,11 @@ public class ProxyBuilder<T> {
     }
 
     public T build() {
-        return proxy(iface, webTarget, new ProxyConfig(loader, serverConsumes, serverProduces));
+        return proxy(iface, webTarget, new ProxyConfig(loader, serverConsumes, serverProduces), null);
+    }
+
+    public T buildWithInterceptor(ClientInvokerInterceptor interceptor) {
+        return proxy(iface, webTarget, new ProxyConfig(loader, serverConsumes, serverProduces), interceptor);
     }
 
 }
