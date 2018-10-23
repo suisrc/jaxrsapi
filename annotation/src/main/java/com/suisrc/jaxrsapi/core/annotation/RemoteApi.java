@@ -17,15 +17,16 @@ import java.lang.annotation.Target;
 @Target({TYPE/* , METHOD, FIELD */ })
 @Retention(RUNTIME)
 public @interface RemoteApi {
-    
-    /**
-     * 同Path替换类型上的@Path内容
-     * @return
-     */
-    String value() default "";
-    
-    /**
-     * Client关键字, 用于选择生成的客户端方式
-     */
-    String client() default "";
+
+  /**
+   * 同Path替换类型上的@Path内容
+   * 
+   * @return
+   */
+  String value() default "";
+
+  /**
+   * Client关键字, 用于选择生成的客户端方式
+   */
+  String client() default "";
 }

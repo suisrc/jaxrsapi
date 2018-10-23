@@ -21,10 +21,11 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface RetryProxy {
 
-    /**
-     * 请求重试的次数
-     * @return
-     */
-    int value() default 2;
-    
+  /**
+   * 请求重试的次数
+   * 
+   * @return
+   */
+  int value() default 2;
+
 }

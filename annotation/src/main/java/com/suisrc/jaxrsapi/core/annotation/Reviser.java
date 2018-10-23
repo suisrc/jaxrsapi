@@ -20,14 +20,14 @@ import com.suisrc.jaxrsapi.core.runtime.ReviseHandler;
 @Retention(RUNTIME)
 public @interface Reviser {
 
-    /**
-     * 辅助修正参数的内容
-     */
-    Class<? extends ReviseHandler<?>> value();
+  /**
+   * 辅助修正参数的内容
+   */
+  Class<? extends ReviseHandler<?>> value();
 
-    /**
-     * ReviseHandler 构造的时候是否带有所有者信息
-     */
-    String master() default "";
+  /**
+   * ReviseHandler 构造的时候是否带有所有者信息
+   */
+  String master() default "";
 
 }

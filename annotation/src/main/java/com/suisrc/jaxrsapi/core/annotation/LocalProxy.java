@@ -20,25 +20,25 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface LocalProxy {
 
-    /**
-     * 辅助修正参数的内容
-     */
-    Class<?> value();
+  /**
+   * 辅助修正参数的内容
+   */
+  Class<?> value();
 
-    /**
-     * Handler 构造的时候是否带有所有者信息
-     */
-    String master() default "";
+  /**
+   * Handler 构造的时候是否带有所有者信息
+   */
+  String master() default "";
 
-    /**
-     * 通过类中的静态方法进行获取数据
-     * 
-     * 该方法必须是一个可以接受一个String参数的静态方法
-     */
-    String method() default defaultMethod;
+  /**
+   * 通过类中的静态方法进行获取数据
+   * 
+   * 该方法必须是一个可以接受一个String参数的静态方法
+   */
+  String method() default defaultMethod;
 
-    /**
-     * 默认的方法名称
-     */
-    String defaultMethod = "proxy";
+  /**
+   * 默认的方法名称
+   */
+  String defaultMethod = "proxy";
 }

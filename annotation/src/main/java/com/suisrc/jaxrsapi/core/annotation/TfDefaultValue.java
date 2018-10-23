@@ -21,8 +21,8 @@ import com.suisrc.jaxrsapi.core.runtime.ITransform4Str;
 @Retention(RUNTIME)
 public @interface TfDefaultValue {
 
-    /**
-     * 该方法获取类型转换器
-     */
-    Class<? extends ITransform4Str<?>> value();
+  /**
+   * 该方法获取类型转换器
+   */
+  Class<? extends ITransform4Str<?>> value();
 }
