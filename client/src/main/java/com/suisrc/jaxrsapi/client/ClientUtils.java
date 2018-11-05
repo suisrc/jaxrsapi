@@ -26,7 +26,6 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
-import com.suisrc.core.utils.ComUtils;
 import com.suisrc.jaxrsapi.client.proxy.ClientInvokerInterceptor;
 import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
@@ -38,7 +37,7 @@ import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
  *
  */
 public class ClientUtils {
-    private static final Logger logger = Logger.getLogger(ComUtils.class.getName());
+    private static final Logger logger = Logger.getLogger(ClientUtils.class.getName());
 
     /**
      * 快速远程接口访问
