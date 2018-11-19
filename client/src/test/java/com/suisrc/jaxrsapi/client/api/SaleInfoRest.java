@@ -9,7 +9,7 @@ import javax.ws.rs.core.MediaType;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
 
 /**
- * 远程访问接口
+ * <p> 远程访问接口
  * 
  * @author Y13
  *

@@ -1,5 +1,7 @@
 package com.suisrc.jaxrsapi.client.proxy;
 
+import java.util.Map;
+
 import org.jboss.resteasy.client.jaxrs.internal.ClientInvocation;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ClientInvoker;
 
@@ -9,8 +11,11 @@ import org.jboss.resteasy.client.jaxrs.internal.proxy.ClientInvoker;
  * @author Y13
  *
  */
-public interface ClientInvokerInterceptAfter extends ClientInvokerInterceptor {
+@SuppressWarnings("rawtypes")
+public interface ClientInvokerFilterAfter extends ClientInvokerFilter {
     
     @Override
-    default void before(ClientInvoker invoker, ClientInvocation request) {};
+    default Object before(Map cache, ClientInvoker invoker, ClientInvocation request) {
+      return null;
+    };
 }

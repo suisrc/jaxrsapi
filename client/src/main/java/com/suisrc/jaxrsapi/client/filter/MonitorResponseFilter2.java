@@ -1,23 +1,20 @@
 package com.suisrc.jaxrsapi.client.filter;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.logging.Logger;
 
 import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.ClientResponseContext;
+import javax.ws.rs.client.ClientResponseFilter;
 
 import com.suisrc.core.fasterxml.FF;
 import com.suisrc.core.fasterxml.FasterFactory;
 import com.suisrc.core.fasterxml.FasterFactory.Type;
+import com.suisrc.core.utils.FileUtils;
 
-/**
- * <p> 请求监控控制器
- * 
- * @author Y13
- *
- */
-public class MonitorRequestFilter implements ClientRequestFilter {
+public class MonitorResponseFilter2 implements ClientResponseFilter {
   private static final Logger logger = Logger.getLogger(MonitorRequestFilter.class.getName());
 
   /**
@@ -29,7 +26,7 @@ public class MonitorRequestFilter implements ClientRequestFilter {
    * 
    * @param activator
    */
-  public MonitorRequestFilter(String name) {
+  public MonitorResponseFilter2(String name) {
     this.name = name;
   }
 
@@ -46,7 +43,7 @@ public class MonitorRequestFilter implements ClientRequestFilter {
    * 
    */
   @Override
-  public void filter(final ClientRequestContext rtx) throws IOException {
+  public void filter(ClientRequestContext rtx, ClientResponseContext rcx) throws IOException {
     StringBuilder sbir = new StringBuilder();
     sbir.append("execute remote access request by [" + getRequestName() + "]\n");
     sbir.append("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓\n");
@@ -65,6 +62,20 @@ public class MonitorRequestFilter implements ClientRequestFilter {
         sbir.append(content + "\n");
       }
     }
+    sbir.append("----------result----------\n");
+    sbir.append("status : ").append(rcx.getStatus()).append('\n');
+    sbir.append("length : ").append(rcx.getLength()).append('\n');
+    if (rcx.hasEntity()) {
+      String type = rcx.getHeaderString("content-type");
+      if (type != null && type.startsWith("application/")) {
+        InputStream is = rcx.getEntityStream();
+        String res = FileUtils.getContent(is);
+        is.reset();
+        sbir.append("result : ").append(res);
+      }
+      sbir.append("----------entity----------\n");
+      sbir.append("stream data").append('\n');
+    }
     sbir.append("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
     printRequestInfo(sbir.toString());
   }
@@ -76,5 +87,4 @@ public class MonitorRequestFilter implements ClientRequestFilter {
   protected void printRequestInfo(String info) {
     logger.info(info);
   }
-
 }

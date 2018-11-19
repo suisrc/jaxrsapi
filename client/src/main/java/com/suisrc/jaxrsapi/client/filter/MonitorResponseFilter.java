@@ -5,19 +5,14 @@ import java.io.OutputStream;
 import java.util.logging.Logger;
 
 import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.ClientResponseContext;
+import javax.ws.rs.client.ClientResponseFilter;
 
 import com.suisrc.core.fasterxml.FF;
 import com.suisrc.core.fasterxml.FasterFactory;
 import com.suisrc.core.fasterxml.FasterFactory.Type;
 
-/**
- * <p> 请求监控控制器
- * 
- * @author Y13
- *
- */
-public class MonitorRequestFilter implements ClientRequestFilter {
+public class MonitorResponseFilter implements ClientResponseFilter {
   private static final Logger logger = Logger.getLogger(MonitorRequestFilter.class.getName());
 
   /**
@@ -29,7 +24,7 @@ public class MonitorRequestFilter implements ClientRequestFilter {
    * 
    * @param activator
    */
-  public MonitorRequestFilter(String name) {
+  public MonitorResponseFilter(String name) {
     this.name = name;
   }
 
@@ -46,7 +41,7 @@ public class MonitorRequestFilter implements ClientRequestFilter {
    * 
    */
   @Override
-  public void filter(final ClientRequestContext rtx) throws IOException {
+  public void filter(ClientRequestContext rtx, ClientResponseContext rcx) throws IOException {
     StringBuilder sbir = new StringBuilder();
     sbir.append("execute remote access request by [" + getRequestName() + "]\n");
     sbir.append("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓\n");
@@ -65,6 +60,9 @@ public class MonitorRequestFilter implements ClientRequestFilter {
         sbir.append(content + "\n");
       }
     }
+    sbir.append("----------result----------\n");
+    sbir.append("status : ").append(rcx.getStatus());
+    sbir.append("length : ").append(rcx.getLength());
     sbir.append("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
     printRequestInfo(sbir.toString());
   }
@@ -76,5 +74,4 @@ public class MonitorRequestFilter implements ClientRequestFilter {
   protected void printRequestInfo(String info) {
     logger.info(info);
   }
-
 }

@@ -26,7 +26,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
-import com.suisrc.jaxrsapi.client.proxy.ClientInvokerInterceptor;
+import com.suisrc.jaxrsapi.client.proxy.ClientInvokerFilter;
 import com.suisrc.jaxrsapi.client.proxy.ProxyBuilder;
 import com.suisrc.jaxrsapi.core.annotation.RemoteApi;
 
@@ -40,22 +40,22 @@ public class ClientUtils {
     private static final Logger logger = Logger.getLogger(ClientUtils.class.getName());
 
     /**
-     * 快速远程接口访问
+     * <p> 快速远程接口访问
      * 
-     * 该方法旨在为用于提供快速访问
+     * <p> 该方法旨在为用于提供快速访问
      * 
-     * 单次访问有效
+     * <p> 单次访问有效
      */
     public static <T, R> R getRestfulImpl(String uri, Class<T> iface, Function<T, R> getter) {
         return getRestfulResult(uri, iface, getter, null, null);
     }
 
     /**
-     * 快速远程接口访问
+     * <p> 快速远程接口访问
      * 
-     * 该方法旨在为用于提供快速访问
+     * <p> 该方法旨在为用于提供快速访问
      * 
-     * 单次访问有效
+     * <p> 单次访问有效
      */
     public static <T, R> R getRestfulResult(String uri, Class<T> iface, Function<T, R> getter,
             Supplier<ClientBuilder> builderFactory, Function<ClientBuilder, Client> clientFactory) {
@@ -72,7 +72,7 @@ public class ClientUtils {
     }
 
     /**
-     * 获取远程访问使用的实体
+     * <p> 获取远程访问使用的实体
      * 
      * @param uri
      * @param iface
@@ -92,15 +92,15 @@ public class ClientUtils {
     }
 
     /**
-     * 获取远程访问使用的实体
+     * <p> 获取远程访问使用的实体
      * 
      * @param uri
      * @param iface
      * @param client
      * @return
      */
-    public static <T> T getRestfulApiImplWithInterceptor(String uri, Class<T> iface, Client client, 
-            ClientInvokerInterceptor interceptor) {
+    public static <T> T getRestfulApiImplWithFilter(String uri, Class<T> iface, Client client, 
+            ClientInvokerFilter filter) {
         WebTarget target = client.target(uri);
         if (iface.isAnnotationPresent(RemoteApi.class)) {
             RemoteApi path = iface.getAnnotation(RemoteApi.class);
@@ -108,12 +108,12 @@ public class ClientUtils {
                 target = target.path(path.value());
             }
         }
-        T proxy = ProxyBuilder.builder(iface, target).buildWithInterceptor(interceptor);
+        T proxy = ProxyBuilder.builder(iface, target).buildWithFilter(filter);
         return proxy;
     }
 
     /**
-     * 获取访问使用的client
+     * <p> 获取访问使用的client
      * 
      * @param builderFactory
      * @param clientFactory
@@ -126,13 +126,13 @@ public class ClientUtils {
     }
 
     /**
-     * 获取本地系统对外网的IP
+     * <p> 获取本地系统对外网的IP
      * 
-     * 有时候，需要当前系统对外网IP
+     * <p> 有时候，需要当前系统对外网IP
      * 
-     * 当前方法对外网有访问权限，如果没有外网访问权限，不可以使用该方法
+     * <p> 当前方法对外网有访问权限，如果没有外网访问权限，不可以使用该方法
      * 
-     * 该方法返回可能为null，如果为null表示无法获取当前IP
+     * <p> 该方法返回可能为null，如果为null表示无法获取当前IP
      */
     public static String getLocalIpByRemoteUrlRex() {
         String ipUrl = System.getProperty("TEST_LOCALHOST_IP_URL");
@@ -158,7 +158,7 @@ public class ClientUtils {
     }
 
     /**
-     * 远程访问
+     * <p> 远程访问
      * 
      * @param request
      * @return
@@ -186,7 +186,7 @@ public class ClientUtils {
     }
 
     /**
-     * 提供器
+     * <p> 提供器
      * 
      * @return
      */
@@ -200,7 +200,7 @@ public class ClientUtils {
     }
 
     /**
-     * 获取访问使用的client
+     * <p> 获取访问使用的client
      * 
      * @param builderFactory
      * @param clientFactory

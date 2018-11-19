@@ -17,8 +17,8 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import com.suisrc.core.Global;
 import com.suisrc.core.cache.ScopedCache;
 import com.suisrc.jaxrsapi.client.ClientUtils;
-import com.suisrc.jaxrsapi.client.proxy.ClientInvokerInterceptBefore;
-import com.suisrc.jaxrsapi.client.proxy.ClientInvokerInterceptor;
+import com.suisrc.jaxrsapi.client.proxy.ClientInvokerFilter;
+import com.suisrc.jaxrsapi.client.proxy.ClientInvokerFilterBefore;
 
 /**
  * Soap12访问
@@ -80,7 +80,7 @@ public class SoapClientUtils {
                 clientConsumer.accept(client);
             }
         }
-        return ClientUtils.getRestfulApiImplWithInterceptor(uri, iface, client, setClientInvokerToThread());
+        return ClientUtils.getRestfulApiImplWithFilter(uri, iface, client, setClientInvokerToThread());
     }
 
     /**
@@ -88,12 +88,13 @@ public class SoapClientUtils {
      * 
      * @return
      */
-    public static ClientInvokerInterceptor setClientInvokerToThread() {
-        return new ClientInvokerInterceptBefore() {
+    @SuppressWarnings("rawtypes")
+    public static ClientInvokerFilter setClientInvokerToThread() {
+        return new ClientInvokerFilterBefore() {
             private Consumer<String> remover;
 
             @Override
-            public void before(ClientInvoker invoker, ClientInvocation request) {
+            public Object before(Map c0, ClientInvoker invoker, ClientInvocation request) {
                 ScopedCache cache = Global.getThreadCache();
                 if (cache != null) {
                     cache.put(SoapConsts.CLIENT_INVOKER, invoker);
@@ -103,10 +104,11 @@ public class SoapClientUtils {
                     cache0.put(SoapConsts.CLIENT_INVOKER, invoker);
                     remover = s -> cache0.remove(SoapConsts.CLIENT_INVOKER);
                 }
+                return null;
             }
 
             @Override
-            public void finally0(ClientInvoker invoker) {
+            public void finally0(Map c0, ClientInvoker invoker) {
                 if (remover != null) {
                     remover.accept(null);
                     remover = null;

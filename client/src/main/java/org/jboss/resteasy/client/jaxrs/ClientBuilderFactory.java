@@ -13,31 +13,31 @@ import javax.ws.rs.client.ClientBuilder;
  */
 public class ClientBuilderFactory {
 
-    private static final boolean useOldHTTPClient = Boolean.getBoolean("org.jboss.resteasy.client.use_old_http_client");
-    private static final boolean newHTTPClientAvailable;
-    static {
-        boolean res = true;
-        try {
-            Class.forName(HttpClientBuilder43.class.getName());
-        } catch (Throwable t) {
-            res = false;
-        }
-        newHTTPClientAvailable = res;
+  private static final boolean useOldHTTPClient = Boolean.getBoolean("org.jboss.resteasy.client.use_old_http_client");
+  private static final boolean newHTTPClientAvailable;
+  static {
+    boolean res = true;
+    try {
+      Class.forName(HttpClientBuilder43.class.getName());
+    } catch (Throwable t) {
+      res = false;
     }
+    newHTTPClientAvailable = res;
+  }
 
-    public static ClientBuilder newBuilder() {
-        return new ResteasyClientBuilder();
-        // return ClientBuilder.newBuilder();
-    }
+  public static ClientBuilder newBuilder() {
+    return new ResteasyClientBuilder();
+    // return ClientBuilder.newBuilder();
+  }
 
-    public static void initHttpEngineThreadSaft(ResteasyClientBuilder that) {
-        ClientHttpEngine engine = null;
-        if (useOldHTTPClient || !newHTTPClientAvailable) {
-            engine = ClientHttpEngineBuilder4.initDefaultEngine4(that);
-        } else {
-            engine = ClientHttpEngineBuilder43.initDefaultEngine43(that);
-        }
-        that.httpEngine(engine);
+  public static void initHttpEngineThreadSaft(ResteasyClientBuilder that) {
+    ClientHttpEngine engine = null;
+    if (useOldHTTPClient || !newHTTPClientAvailable) {
+      engine = ClientHttpEngineBuilder4.initDefaultEngine4(that);
+    } else {
+      engine = ClientHttpEngineBuilder43.initDefaultEngine43(that);
     }
+    that.httpEngine(engine);
+  }
 
 }

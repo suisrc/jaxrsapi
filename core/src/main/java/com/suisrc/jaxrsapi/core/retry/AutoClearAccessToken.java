@@ -1,10 +1,10 @@
 package com.suisrc.jaxrsapi.core.retry;
 
 import com.suisrc.core.utils.Throwables;
-import com.suisrc.jaxrsapi.core.AbstractTokenActivator;
 import com.suisrc.jaxrsapi.core.ApiActivator;
 import com.suisrc.jaxrsapi.core.ServiceClient;
 import com.suisrc.jaxrsapi.core.runtime.RetryPredicate;
+import com.suisrc.jaxrsapi.core.token.AbstractTokenActivator;
 
 /**
  * 自动清空访问token

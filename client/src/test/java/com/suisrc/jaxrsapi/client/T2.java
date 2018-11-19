@@ -19,6 +19,7 @@ import com.suisrc.jaxrsapi.client.api.SZSJJJDSaleService;
 import com.suisrc.jaxrsapi.client.api.SaleInfoRest;
 import com.suisrc.jaxrsapi.client.api.ZYHBody;
 import com.suisrc.jaxrsapi.client.api.ZYHResult;
+import com.suisrc.jaxrsapi.client.filter.MonitorClientInvokerFilter;
 import com.suisrc.jaxrsapi.client.filter.MonitorRequestFilter;
 
 /**
@@ -34,11 +35,17 @@ public class T2 {
     @Test
     public void test1() {
         Client client = ClientUtils.getClientWithProvider();
-        
-        client.register(new MonitorRequestFilter("深圳卓越汇店"));
+
+        MonitorClientInvokerFilter filter = new MonitorClientInvokerFilter("深圳卓越汇店");
         String url = "http://218.17.234.114:1235";
-        url = "http://127.0.0.1:8771";
-        SaleInfoRest rest = ClientUtils.getRestfulApiImpl(url, SaleInfoRest.class, client);
+        url = "http://127.0.0.1:87711";
+        SaleInfoRest rest = ClientUtils.getRestfulApiImplWithFilter(url, SaleInfoRest.class, client, filter);
+        
+//        client.register(new MonitorRequestFilter("深圳卓越汇店"));
+//        client.register(new MonitorResponseFilter("深圳卓越汇店"));
+//        String url = "http://218.17.234.114:1235";
+//        url = "http://127.0.0.1:8771";
+//        SaleInfoRest rest = ClientUtils.getRestfulApiImpl(url, SaleInfoRest.class, client);
         
         ZYHBody body = new ZYHBody();
         body.setShopCode("小傻瓜");

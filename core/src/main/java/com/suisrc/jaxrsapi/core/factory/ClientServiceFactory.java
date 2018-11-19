@@ -692,7 +692,7 @@ public class ClientServiceFactory {
             JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
             proxyExpr.arg(JTypes.typeNamed(proxyType).field("class"));
             proxyExpr.arg(JExprs.$v(target));
-            JCall buildExpr = proxyExpr.call("build");
+            JCall buildExpr = proxyExpr.call(ProxyBuilder.BUILD_METHOD);
             
             JAssignableExpr proxy = JExprs.$v(body.var(0, proxyType, "proxy", buildExpr));
             methodExpr = proxy.call(method.name());
@@ -859,7 +859,7 @@ public class ClientServiceFactory {
             JCall proxyExpr = JExprs.callStatic(ProxyBuilder.class, "builder");
             proxyExpr.arg(JTypes.typeNamed(api).field("class"));
             proxyExpr.arg(JExprs.$v(target));
-            JCall buildExpr = proxyExpr.call("build");
+            JCall buildExpr = proxyExpr.call(ProxyBuilder.BUILD_METHOD);
             initializeBody.assign(JExprs.$v(proxyField), buildExpr);
         }
         
