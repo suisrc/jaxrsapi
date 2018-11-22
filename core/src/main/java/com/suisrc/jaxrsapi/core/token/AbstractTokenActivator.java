@@ -1,11 +1,9 @@
 package com.suisrc.jaxrsapi.core.token;
 
-import java.io.File;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.suisrc.core.scheduler.CustomDelayScheduler;
-import com.suisrc.core.utils.FileUtils;
 import com.suisrc.jaxrsapi.core.AbstractActivator;
 
 /**
@@ -238,9 +236,9 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
   protected synchronized TokenAtom initTokenAtom(String tokenKey) {
     TokenAtom tokenAtom = getTokenAtom(tokenKey, true);
     if (tokenAtom.getToken() != null) {
-      // token是新的，这里进行初始内容
       return tokenAtom;
     }
+    // token是新的，这里进行初始内容
     // 从拓扑网络中获取token
     TokenReference token = getTokenByTopology(tokenKey);
     if (token != null) {
@@ -248,23 +246,7 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
       return tokenAtom;
     }
     token = new TokenReference();
-    // 读取系统文件中的access token
-    // 拓扑网络中的token和临时系统中的token是不一样的
-    // 请注意，该部分大部分用于调试，不用频繁访问token中控服务器
-    Token tkn = null;
-    if (tokenStatistics == 0) {
-      // 为执行统计，第一个可以通过缓存文件获取
-      tkn = (Token) readTempObject(tokenKey);
-      if (tkn != null) {
-        // 计数器增加
-        tokenStatistics++;
-      }
-    }
-    if (tkn == null) {
-      // 初始化一个无效凭证
-      tkn = new Token();
-    }
-    token.set(tkn);
+    token.set(new Token());
     token = putTokenByTopology(tokenKey, token);
     tokenAtom.setToken(token);
     return tokenAtom;
@@ -380,7 +362,6 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
       lockUpdateTokenByTopology(tokenAtom.getTokenKey());
       Token tkn = getTokenByRemote(tokenAtom.getTokenKey());
       if (tkn != null) {
-        writeTempObject(tokenAtom.getTokenKey(), tkn);
         tokenAtom.setTokenTrigger(tkn);
       }
       tokenStatistics++; // token统计增加
@@ -465,9 +446,7 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
    * 
    * <p> 以下内容是对原有内容的辅助增强 <p> 也是对以前单模态下的访问令牌控制器的兼容 <p> 前期必须重写getTokenDefaultKey
    */
-  protected String getTokenDefaultKey() {
-    return null;
-  }
+  protected abstract String getTokenDefaultKey();
 
   /**
    * <p> 获取access token
@@ -491,67 +470,4 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
     clearToken(tokenKey, stopService);
   }
 
-  // ---------------------------------------------------------------------临时文件保存
-  /**
-   * <p> 临时缓存文件的名字
-   * 
-   * @return
-   */
-  protected String getTempFileName() {
-    return null;
-  }
-
-  /**
-   * <p> 修正文件名称
-   */
-  protected String getTempFileNameByKey(String filename, String key) {
-    if (key != null && !key.isEmpty()) {
-      key = "_" + key; // 增加分隔符
-      int offset = filename.lastIndexOf('.');
-      if (offset > 0) {
-        filename = filename.substring(0, offset) + key + filename.substring(offset);
-      } else {
-        filename += key;
-      }
-    }
-    return filename;
-  }
-
-  /**
-   * <p> 把access token写入文件中，避免测试中频繁调用
-   * 
-   * @param token
-   */
-  protected void writeTempObject(String key, Object obj) {
-    if (!DEBUG) {
-      return;
-    }
-    String filename = getTempFileName();
-    if (filename == null || filename.isEmpty()) {
-      return;
-    }
-    filename = getTempFileNameByKey(filename, key);
-    FileUtils.writeObject(filename, obj);
-  }
-
-  /**
-   * <p> 从文件中读入access token
-   * 
-   * @return
-   */
-  protected Object readTempObject(String key) {
-    if (!DEBUG) {
-      return null;
-    }
-    String filename = getTempFileName();
-    if (filename == null || filename.isEmpty()) {
-      return null;
-    }
-    filename = getTempFileNameByKey(filename, key);
-    File file = new File(filename);
-    if (!file.exists()) {
-      return null;
-    }
-    return FileUtils.readObject(filename);
-  }
 }
