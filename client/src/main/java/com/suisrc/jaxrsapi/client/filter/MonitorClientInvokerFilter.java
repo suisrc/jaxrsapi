@@ -78,7 +78,7 @@ public class MonitorClientInvokerFilter implements ClientInvokerFilter {
       if (req != null) {
         sbir.append(req.getMethod()).append(' ').append(req.getUri());
         // --------------------增加header内容
-        sbir.append("\n---------------------------------------------------------------request---------\n");
+        sbir.append("\n---------------------------------------------------------------request----------\n");
         req.getHeaders().asMap().forEach((k, v) -> sbir.append(k).append(" : ").append(v).append('\n'));
         // --------------------增加请求的内容
         if (req.getEntity() != null) {
@@ -92,7 +92,7 @@ public class MonitorClientInvokerFilter implements ClientInvokerFilter {
         }
       }
       if (res != null) {
-        sbir.append("--------------------------------------------------------------response---------\n");
+        sbir.append("--------------------------------------------------------------response----------\n");
         sbir.append("status : ").append(res.getStatus()).append('\n');
         if (result != null) {
           sbir.append("--------------------------------------------------------------------------------\n");
@@ -105,7 +105,7 @@ public class MonitorClientInvokerFilter implements ClientInvokerFilter {
         }
       }
       if (ex != null) {
-        sbir.append("------------------------------------------------------------exception---------\n");
+        sbir.append("------------------------------------------------------------exception----------\n");
         sbir.append("exception : " + ex.getMessage() + "\n");
       }
       sbir.append("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
