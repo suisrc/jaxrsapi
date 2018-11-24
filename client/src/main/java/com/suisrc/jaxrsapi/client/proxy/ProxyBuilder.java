@@ -157,7 +157,7 @@ public class ProxyBuilder<T> {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   public T build2() {
-    Function getter = Global.getCacheSafe(Global.getApplicationCache(), GLOBAL_FILTER_GETTER, Function.class);
+    Function getter = Global.getCacheSafe(Global.getScCache(), GLOBAL_FILTER_GETTER, Function.class);
     if (getter != null) {
       ClientInvokerFilter filter = (ClientInvokerFilter) getter.apply(iface);
       if (filter != null) {

@@ -27,7 +27,7 @@ public class JaxrsapiMonitorTask implements ScheduleHandler {
   public void run() {
     try {
       Function<Class<?>, ?> func = iface -> new MonitorClientInvokerFilter(iface.getName());
-      Global.putCacheSafe(Global.getApplicationCache(), ProxyBuilder.GLOBAL_FILTER_GETTER, func);
+      Global.putCacheSafe(Global.getScCache(), ProxyBuilder.GLOBAL_FILTER_GETTER, func);
       Global.getLogger().info("完成全局JAXRSAPI监控器配置：" + MonitorClientInvokerFilter.class.getName());
     } catch (Exception e) {
       // do nothing

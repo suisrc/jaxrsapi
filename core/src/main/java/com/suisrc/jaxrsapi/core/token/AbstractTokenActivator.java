@@ -363,6 +363,9 @@ public abstract class AbstractTokenActivator extends AbstractActivator {
       Token tkn = getTokenByRemote(tokenAtom.getTokenKey());
       if (tkn != null) {
         tokenAtom.setTokenTrigger(tkn);
+        if (tkn.getNameKey() != null) {
+          tokenAtom.setTokenKey(tkn.getNameKey());
+        }
       }
       tokenStatistics++; // token统计增加
     } finally {
